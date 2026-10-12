@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 import clock from "../assets/clock.png";
 import google from "../assets/google.png";
@@ -44,10 +45,9 @@ const Field = ({ label, type = "text", show, onToggle, ...props }) => (
 );
 
 export default function LoginSignup({ initialMode = "signup" }) {
-  const [mode, setMode] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const signup = mode === "signup";
+  const signup = initialMode === "signup";
 
   const submit = (e) => {
     e.preventDefault();
@@ -55,21 +55,16 @@ export default function LoginSignup({ initialMode = "signup" }) {
     if (signup && data.password !== data.confirm)
       return setError("Passwords do not match.");
     setError("");
-    console.log(signup ? "signup" : "login", data); // TODO: replace with your API call
-  };
-
-  const switchMode = () => {
-    setMode(signup ? "login" : "signup");
-    setError("");
+    console.log(signup ? "signup" : "login", data); // TODO: replace when you have a backend
   };
 
   return (
     <div className="auth">
       {/* ---------- left hero ---------- */}
       <aside className={signup ? "hero" : "hero hero-login"}>
-        <a className="brand" href="/">
+        <Link className="brand" to="/">
           <img src={logo} alt="CampusFix" />
-        </a>
+        </Link>
 
         <div className="hero-body">
           {signup ? (
@@ -212,16 +207,9 @@ export default function LoginSignup({ initialMode = "signup" }) {
           {signup && (
             <p className="switch">
               Already have an account?{" "}
-              <a
-                className="text-link"
-                href="#login"
-                onClick={(e) => {
-                  e.preventDefault();
-                  switchMode();
-                }}
-              >
+              <Link className="text-link" to="/login">
                 Log in <img className="arrow-ic" src={rightarrow} alt="" />
-              </a>
+              </Link>
             </p>
           )}
 
@@ -242,16 +230,9 @@ export default function LoginSignup({ initialMode = "signup" }) {
           {!signup && (
             <p className="switch">
               Don&apos;t have an account?{" "}
-              <a
-                className="text-link"
-                href="#register"
-                onClick={(e) => {
-                  e.preventDefault();
-                  switchMode();
-                }}
-              >
+              <Link className="text-link" to="/signup">
                 Register
-              </a>
+              </Link>
             </p>
           )}
         </section>
