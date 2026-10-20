@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(wmic process *)",
+      "Bash(taskkill //F //PID 16008)"
+    ]
+  }
+}

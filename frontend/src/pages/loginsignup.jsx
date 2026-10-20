@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import clock from "../assets/clock.png";
 import google from "../assets/google.png";
@@ -34,7 +34,11 @@ const Field = ({ label, type = "text", show, onToggle, ...props }) => (
   <label className="field">
     <span className="label">{label}</span>
     <span className="control">
-      <input type={onToggle ? (show ? "text" : "password") : type} {...props} />
+      <input
+        className="auth-input"
+        type={onToggle ? (show ? "text" : "password") : type}
+        {...props}
+      />
       {onToggle && (
         <button type="button" className="toggle" onClick={onToggle}>
           {show ? "Hide" : "Show"}
@@ -44,24 +48,53 @@ const Field = ({ label, type = "text", show, onToggle, ...props }) => (
   </label>
 );
 
+const API_URL = "http://localhost:5000/api/auth";
+
 export default function LoginSignup({ initialMode = "signup" }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const signup = initialMode === "signup";
 
-  const submit = (e) => {
+  // already logged in? the forms are pointless — go straight to the dashboard
+  useEffect(() => {
+    if (localStorage.getItem("token")) navigate("/dashboard", { replace: true });
+  }, [navigate]);
+
+  const submit = async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
     if (signup && data.password !== data.confirm)
       return setError("Passwords do not match.");
     setError("");
-    console.log(signup ? "signup" : "login", data); // TODO: replace when you have a backend
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/${signup ? "signup" : "login"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json(); // backend always replies { message, token?, user? }
+
+      if (!res.ok) throw new Error(json.message || "Something went wrong.");
+
+      // logged in / signed up — keep the token so we can prove who we are later
+      localStorage.setItem("token", json.token);
+      localStorage.setItem("user", JSON.stringify(json.user));
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth">
       {/* ---------- left hero ---------- */}
-      <aside className={signup ? "hero" : "hero hero-login"}>
+      <aside className={signup ? "hero-signup" : "hero-login"}>
         <Link className="brand" to="/">
           <img src={logo} alt="CampusFix" />
         </Link>
@@ -72,7 +105,7 @@ export default function LoginSignup({ initialMode = "signup" }) {
               <h1>
                 Fix Campus Issues <span>Together</span>
               </h1>
-              <p className="lead">
+              <p className="lead-signup">
                 Report issues, track progress and help make your campus a better
                 place — all in one place.
               </p>
@@ -95,7 +128,7 @@ export default function LoginSignup({ initialMode = "signup" }) {
               <h1>
                 Better Campus. <span>Together.</span>
               </h1>
-              <p className="lead">
+              <p className="lead-login">
                 Report issues, track their progress, and help your campus become
                 a better place — all from one platform.
               </p>
@@ -183,21 +216,25 @@ export default function LoginSignup({ initialMode = "signup" }) {
               </div>
             )}
 
-            <button className="btn" type="submit">
-              {signup ? "Sign Up" : "Login"}
+            <button
+              className={signup ? "btn-signup" : "btn-login"}
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Please wait…" : signup ? "Sign Up" : "Login"}
             </button>
           </form>
 
           <div className="divider">{signup ? "or" : "or continue with"}</div>
 
           {signup ? (
-            <button className="btn-outline" type="button">
+            <button className="btn-outline-signup" type="button">
               <img className="provider-ic" src={google} alt="" />
               Continue with Google
             </button>
           ) : (
             <div className="providers">
-              <button className="btn-outline" type="button">
+              <button className="btn-outline-login" type="button">
                 <img className="provider-ic" src={google} alt="" />
                 Google
               </button>

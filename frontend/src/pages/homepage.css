@@ -2,7 +2,7 @@
   --brand: #4f46e5;
   --brand-dark: #4338ca;
   --violet: #6a5ae8;
-  --ink: #14163c;
+  --ink: #002470;
   --muted: #6b7280;
   --line: #e3e7f4;
   --tint: #f0f5fe;
@@ -415,6 +415,11 @@ h4 {
   border-radius: 7px;
 }
 
+/* the report icon asset is white — recolor it to brand indigo so it reads on the pastel tile */
+.stat-ic.tone-blue img {
+  filter: brightness(0) invert(27%) sepia(84%) saturate(4526%) hue-rotate(232deg) brightness(95%) contrast(92%);
+}
+
 .stat b {
   display: block;
   font-size: 13px;
@@ -710,7 +715,7 @@ h4 {
 
 .service {
   display: grid;
-  grid-template-columns: 210px 1fr;
+  grid-template-columns: 230px 1fr;
   gap: 26px;
   align-items: center;
   padding: 26px;
@@ -720,11 +725,15 @@ h4 {
   box-shadow: 0 8px 22px rgba(31, 41, 90, 0.05);
 }
 
-/* reserved space — drop the illustration into src/assets and render it here */
+/* service illustrations are wide transparent PNGs — no tint box, keep their aspect */
 .service-art {
-  height: 170px;
   border-radius: 16px;
-  background: #e9eefb;
+}
+
+.service-art img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .service h3 {
@@ -807,20 +816,48 @@ h4 {
 }
 
 .cta {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 28px;
-  padding: 46px 54px;
+  padding: 22px 40px;
   border-radius: 22px;
   background: linear-gradient(92deg, #4f46e5 0%, #6a5ae8 60%, #7a5cf0 100%);
   color: #fff;
   box-shadow: 0 24px 50px rgba(79, 70, 229, 0.35);
+  overflow: hidden;
+}
+
+/* campus artwork sits clear of the button, fading out on both edges */
+.cta-banner-img {
+  position: absolute;
+  right: 160px;
+  bottom: 0;
+  z-index: 0;
+  height: 100%;
+  width: auto;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
+}
+
+/* copy + button ride above the artwork */
+.cta-copy,
+.cta .btn {
+  position: relative;
+  z-index: 1;
+}
+
+.cta-copy {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .cta h2 {
   margin: 0 0 8px;
-  font-size: 26px;
+  font-size: 24px;
   letter-spacing: -0.3px;
 }
 
@@ -828,6 +865,12 @@ h4 {
   margin: 0;
   color: rgba(255, 255, 255, 0.85);
   font-size: 15px;
+}
+
+/* CTA button is a pill in the design */
+.cta .btn-white {
+  border-radius: 999px;
+  padding: 12px 22px;
 }
 
 /* ---------- footer ---------- */
@@ -1006,13 +1049,29 @@ h4 {
   }
 
   .service-art {
-    height: 150px;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .cta {
     flex-direction: column;
     padding: 38px 26px;
     text-align: center;
+  }
+
+  .cta-copy {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* artwork becomes a faint full-bleed backdrop so the text stays readable */
+  .cta-banner-img {
+    right: 0;
+    width: 100%;
+    height: auto;
+    opacity: 0.35;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .dash-side {

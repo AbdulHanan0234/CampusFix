@@ -1,20 +1,35 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
-import flash from "../assets/flash.png";
+import thunder from "../assets/thunder.png";
 import clock from "../assets/clock.png";
 import users from "../assets/users.png";
 import rightarrow from "../assets/right-arrow.png";
 import sun from "../assets/sun.png";
 import homepagehero from "../assets/homepagehero.png";
+import artificialIntelligence from "../assets/artificial-intelligence.png";
+import bell from "../assets/bell.png";
+import dart from "../assets/dart.png";
+import group from "../assets/group.png";
+import heart from "../assets/heart.png";
+import reportaproblem from "../assets/reportaproblem.png";
+import clockblue from "../assets/clockblue.png";
+import hubblue from "../assets/hubblue.png";
+import reportblue from "../assets/reportblue.png";
+import tickblue from "../assets/tickblue.png";
+import reportService from "../assets/reportaproblem-service.png";
+import lostfoundservice from "../assets/lostfoundservice.png";
+import ctabanner from "../assets/ctabanner.png";
+import github from "../assets/github.png";
+import linkedin from "../assets/linkedin.png";
+import instagram from "../assets/instagram.png";
+import facebook from "../assets/facebook.png";
+import paper from "../assets/paper.png";
 import "./homepage.css";
 
-/* ---------------------------------------------------------------------------
-   Assets still missing from src/assets — each renders as an empty slot:
-   chip/AI, target, bell, heart, report doc, route hub, check circle, tag,
-   building, send, social icons, user avatars,
-   service illustrations (report / lost & found), home icon (hero button)
---------------------------------------------------------------------------- */
+const API_URL = "http://localhost:5000/api/auth";
+
+
 
 // Renders the asset if available, otherwise a tinted placeholder block.
 const Slot = ({ src, size = 24 }) =>
@@ -34,13 +49,13 @@ const Slot = ({ src, size = 24 }) =>
 
 const FEATURES = [
   {
-    icon: null, // TODO: chip/AI icon
+    icon: artificialIntelligence,
     tone: "indigo",
     title: "AI-Powered Organization",
     text: "Our AI helps structure your complaint, suggest categories, and set the right priority.",
   },
   {
-    icon: flash,
+    icon: thunder,
     tone: "green",
     title: "Fast & Easy Reporting",
     text: "Report issues in seconds with a simple, natural language interface.",
@@ -52,19 +67,19 @@ const FEATURES = [
     text: "See real-time updates from report to resolution.",
   },
   {
-    icon: users,
+    icon: group,
     tone: "orange",
     title: "Department Routing",
     text: "Issues are automatically assigned to the right department.",
   },
   {
-    icon: null, // TODO: bell icon
+    icon: bell,
     tone: "purple",
     title: "Instant Notifications",
     text: "Get updates via in-app notifications and email.",
   },
   {
-    icon: null, // TODO: heart icon
+    icon: heart,
     tone: "pink",
     title: "A Better Campus",
     text: "Together we can create a safer, cleaner and more comfortable campus.",
@@ -74,25 +89,25 @@ const FEATURES = [
 const STEPS = [
   {
     n: "01",
-    icon: null, // TODO: report/document icon
+    icon: reportblue,
     title: "Report",
     text: "Tell us what's wrong using a simple form or natural language.",
   },
   {
     n: "02",
-    icon: null, // TODO: route/hub icon
+    icon: hubblue,
     title: "We Route It",
     text: "CampusFix categorizes the issue and sends it to the relevant department.",
   },
   {
     n: "03",
-    icon: clock,
+    icon: clockblue,
     title: "Track",
     text: "Follow your issue's status and receive updates in real-time.",
   },
   {
     n: "04",
-    icon: null, // TODO: check-circle icon
+    icon: tickblue,
     title: "Get It Resolved",
     text: "The responsible department resolves the issue and closes the report.",
   },
@@ -100,10 +115,12 @@ const STEPS = [
 
 const SERVICES = [
   {
+    img: reportService,
     title: "Report an Issue",
     text: "Report maintenance, IT, safety, cleanliness and other campus problems.",
   },
   {
+    img: lostfoundservice,
     title: "Lost & Found",
     text: "Report lost items or help return things found around campus.",
   },
@@ -116,18 +133,18 @@ const IMPACT = [
     text: "A platform for the entire campus community.",
   },
   {
-    icon: null, // TODO: tag icon
+    icon: dart,
     title: "Issue Tracking",
     text: "Keep track of every report from start to finish.",
   },
   {
-    icon: null, // TODO: building icon
+    icon: group,
     stat: "15+",
     title: "Departments Supported",
     text: "From maintenance to IT and more.",
   },
   {
-    icon: null, // TODO: heart icon
+    icon: heart,
     title: "A Safer, Cleaner Campus",
     text: "Because your voice matters.",
   },
@@ -176,9 +193,31 @@ const NAV_LINKS = [
   { label: "About", href: "#impact" },
 ];
 
-const SOCIALS = ["GitHub", "LinkedIn", "Instagram", "Facebook"];
+const SOCIALS = [
+  { name: "GitHub", icon: github },
+  { name: "LinkedIn", icon: linkedin },
+  { name: "Instagram", icon: instagram },
+  { name: "Facebook", icon: facebook },
+];
 
 export default function HomePage() {
+  // logged-in users get Dashboard/Logout in the navbar instead of Login/Get Started
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem("token"));
+
+  const logout = () => {
+    const token = localStorage.getItem("token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setLoggedIn(false); // navbar flips back to Login / Get Started
+    // expire the token on the server so it can't be reused
+    if (token) {
+      fetch(`${API_URL}/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {}); // offline? the local logout already happened
+    }
+  };
+
   return (
     <>
       {/* ---------- navbar ---------- */}
@@ -202,12 +241,29 @@ export default function HomePage() {
             >
               <Slot src={sun} size={26} />
             </button>
-            <Link className="btn btn-ghost" to="/login">
-              Login
-            </Link>
-            <Link className="btn btn-primary btn-sm" to="/signup">
-              Get Started
-            </Link>
+            {loggedIn ? (
+              <>
+                <Link className="btn btn-ghost" to="/dashboard">
+                  Dashboard
+                </Link>
+                <button
+                  className="btn btn-primary btn-sm"
+                  type="button"
+                  onClick={logout}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="btn btn-ghost" to="/login">
+                  Login
+                </Link>
+                <Link className="btn btn-primary btn-sm" to="/signup">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -227,7 +283,7 @@ export default function HomePage() {
               </p>
               <div className="hero-cta">
                 <Link to="/login" className="btn btn-primary">
-                  <Slot size={18} /> {/* TODO: home/report icon */}
+                  <Slot src={reportaproblem} size={18} />
                   Report an Issue
                   <img className="btn-arrow" src={rightarrow} alt="" />
                 </Link>
@@ -271,7 +327,7 @@ export default function HomePage() {
                   <div className="dash-stats">
                     <div className="stat">
                       <span className="stat-ic tone-blue">
-                        <Slot size={13} />
+                        <Slot src={reportaproblem} size={13} />
                       </span>
                       <span>
                         <b>12</b>
@@ -280,7 +336,7 @@ export default function HomePage() {
                     </div>
                     <div className="stat">
                       <span className="stat-ic tone-orange">
-                        <Slot size={13} />
+                        <Slot src={clock} size={13} />
                       </span>
                       <span>
                         <b>3</b>
@@ -289,7 +345,7 @@ export default function HomePage() {
                     </div>
                     <div className="stat">
                       <span className="stat-ic tone-green">
-                        <Slot size={13} />
+                        <Slot src={dart} size={13} />
                       </span>
                       <span>
                         <b>8</b>
@@ -325,7 +381,7 @@ export default function HomePage() {
 
               <div className="ai-card">
                 <p className="ai-head">
-                  <Slot size={13} /> AI Assistant
+                  <Slot src={artificialIntelligence} size={13} /> AI Assistant
                 </p>
                 <p className="ai-sub">We've organized your issue!</p>
                 <div className="ai-row">
@@ -422,10 +478,11 @@ export default function HomePage() {
               </p>
             </div>
             <div className="services-grid">
-              {SERVICES.map(({ title, text }) => (
+              {SERVICES.map(({ img, title, text }) => (
                 <article className="service" key={title}>
-                  {/* TODO: illustration — add artwork to src/assets and render it here */}
-                  <div className="service-art" />
+                  <div className="service-art">
+                    <img src={img} alt={title} />
+                  </div>
                   <div className="service-body">
                     <h3>{title}</h3>
                     <p>{text}</p>
@@ -465,9 +522,13 @@ export default function HomePage() {
         <section className="cta-wrap">
           <div className="container">
             <div className="cta">
-              <div>
-                <h2>Ready to make your campus better?</h2>
-                <p>Join CampusFix today and be part of the change.</p>
+              <img className="cta-banner-img" src={ctabanner} alt="" />
+              <div className="cta-copy">
+                <Slot src={paper} size={32} />
+                <div>
+                  <h2>Ready to make your campus better?</h2>
+                  <p>Join CampusFix today and be part of the change.</p>
+                </div>
               </div>
               <Link to="/signup" className="btn btn-white">
                 Get Started{" "}
@@ -485,18 +546,12 @@ export default function HomePage() {
             <img src={logo} alt="CampusFix" />
             <p>Fix campus problems. Together.</p>
           </div>
-          <nav className="footer-links">
-            {NAV_LINKS.map(({ label, href }) => (
-              <a key={label} href={href}>
-                {label}
-              </a>
-            ))}
-          </nav>
+
           <div className="footer-right">
             <div className="socials">
-              {SOCIALS.map((name) => (
+              {SOCIALS.map(({ name, icon }) => (
                 <a key={name} href="#" aria-label={name}>
-                  <Slot size={18} /> {/* TODO: social icon */}
+                  <Slot src={icon} size={18} />
                 </a>
               ))}
             </div>
