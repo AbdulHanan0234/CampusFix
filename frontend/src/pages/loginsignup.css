@@ -1,6 +1,6 @@
 :root {
-  --brand: #4f46e5;
-  --brand-dark: #4338ca;
+  --brand: #352ff6;
+  --brand-dark: #2a25d0;
   --ink: #002470;
   --muted: #6b7280;
   --line: #e3e7f4;
@@ -193,7 +193,7 @@
 }
 .auth-input:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 0 0 3px rgba(53, 47, 246, 0.15);
 }
 
 .toggle {

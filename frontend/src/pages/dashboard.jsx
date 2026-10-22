@@ -1,29 +1,30 @@
 import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
+import bell from "../assets/bell.png";
+import { NOTIFICATIONS } from "../data/mock";
 import "./dashboard.css";
 
 const API_URL = "http://localhost:5000/api/auth";
 
-// sidebar items — pages for these don't exist yet, so they don't navigate anywhere
+// sidebar menu — every tab renders from its own jsx file via the nested route.
+// icons: drop the named PNG into src/assets and pass it here (bell already wired)
 const MENU = [
-  "Dashboard",
-  "Report Issue",
-  "My Issues",
-  "Notifications",
-  "Profile",
+  { label: "Dashboard", to: "", end: true, icon: null }, // home.png
+  { label: "Report Issue", to: "/report", icon: null }, // reportissue.png
+  { label: "My Issues", to: "/my-issues", icon: null }, // myissues.png
+  { label: "Lost & Found", to: "/lost-found", icon: null }, // lostfound.png
+  { label: "Notifications", to: "/notifications", icon: bell },
+  { label: "Profile", to: "/profile", icon: null }, // profile.png
 ];
 
-const STATS = [
-  ["0", "Total Issues"],
-  ["0", "Pending"],
-  ["0", "Resolved"],
-];
-
-// neutral placeholder for the missing menu icons — swap in an <img> when you add them
+// neutral placeholder for menu icons still missing — swap in an <img> when added
 const DashIc = () => <span className="dash-ic" aria-hidden="true" />;
 
-export default function Dashboard() {
+// pure-CSS magnifier so the search fields don't need an icon asset
+const SearchIc = () => <span className="dash-searchic" aria-hidden="true" />;
+
+export default function DashboardLayout() {
   const navigate = useNavigate();
 
   // not logged in? the dashboard is pointless — go log in first
@@ -33,7 +34,11 @@ export default function Dashboard() {
     }
   }, [navigate]);
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = JSON.parse(localStorage.getItem("user") || "null") || {
+    name: "Student",
+  };
+  const initial = user.name.charAt(0).toUpperCase();
+  const unread = NOTIFICATIONS.filter((n) => n.unread).length;
 
   const logout = () => {
     const token = localStorage.getItem("token");
@@ -50,26 +55,52 @@ export default function Dashboard() {
     }
   };
 
-  // redirecting to /login — render nothing meanwhile
-  if (!user) return null;
-
   return (
     <div className="dash-shell">
-      {/* ---------- sidebar ---------- */}
-      <aside className="dash-sidebar">
-        <Link className="dash-brandrow" to="/">
+      {/* ---------- topbar ---------- */}
+      <header className="dash-topbar">
+        <Link className="dash-topbrand" to="/">
           <img src={logo} alt="CampusFix" />
         </Link>
 
-        <nav className="dash-menu">
-          {MENU.map((item, i) => (
-            <span
-              key={item}
-              className={i === 0 ? "dash-menuitem on" : "dash-menuitem"}
-            >
-              <DashIc />
-              {item}
+        <label className="dash-search">
+          <SearchIc />
+          <input type="text" placeholder="Search issues, locations..." />
+        </label>
+
+        <div className="dash-topactions">
+          <button className="dash-bell" type="button" aria-label="Notifications">
+            <img src={bell} alt="" />
+            {unread > 0 && <span className="dash-bellbadge">{unread}</span>}
+          </button>
+          <div className="dash-account">
+            <span className="dash-avatar">{initial}</span>
+            <span className="dash-accountname">
+              <b>{user.name}</b>
+              <small>Student</small>
             </span>
+          </div>
+        </div>
+      </header>
+
+      {/* ---------- sidebar ---------- */}
+      <aside className="dash-sidebar">
+        <nav className="dash-menu">
+          {MENU.map(({ label, to, end, icon }) => (
+            <NavLink
+              key={label}
+              to={`/dashboard${to}`}
+              end={end}
+              className={({ isActive }) =>
+                isActive ? "dash-menuitem on" : "dash-menuitem"
+              }
+            >
+              {icon ? <img src={icon} alt="" /> : <DashIc />}
+              {label}
+              {label === "Notifications" && unread > 0 && (
+                <span className="dash-menubadge">{unread}</span>
+              )}
+            </NavLink>
           ))}
         </nav>
 
@@ -78,27 +109,9 @@ export default function Dashboard() {
         </button>
       </aside>
 
-      {/* ---------- main ---------- */}
+      {/* ---------- active tab ---------- */}
       <main className="dash-content">
-        <h1 className="dash-welcome">
-          Welcome back, <span>{user.name}</span> 👋
-        </h1>
-        <p className="dash-sub">Here&apos;s what&apos;s happening on your campus.</p>
-
-        <div className="dash-statgrid">
-          {STATS.map(([value, label]) => (
-            <div className="dash-statcard" key={label}>
-              <b>{value}</b>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        <h2 className="dash-sectiontitle">Recent Issues</h2>
-        <div className="dash-empty">
-          <p>No issues reported yet.</p>
-          <span>Issues you report will appear here with their live status.</span>
-        </div>
+        <Outlet />
       </main>
     </div>
   );

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 import thunder from "../assets/thunder.png";
 import clock from "../assets/clock.png";
-import users from "../assets/users.png";
 import rightarrow from "../assets/right-arrow.png";
 import sun from "../assets/sun.png";
 import homepagehero from "../assets/homepagehero.png";
@@ -25,6 +24,10 @@ import linkedin from "../assets/linkedin.png";
 import instagram from "../assets/instagram.png";
 import facebook from "../assets/facebook.png";
 import paper from "../assets/paper.png";
+import peopleblue from "../assets/peopleblue.png";
+import targetblue from "../assets/targetblue.png";
+import heartblue from "../assets/heartblue.png";
+import departments from "../assets/departments.png";
 import "./homepage.css";
 
 const API_URL = "http://localhost:5000/api/auth";
@@ -128,23 +131,23 @@ const SERVICES = [
 
 const IMPACT = [
   {
-    icon: users,
+    icon: peopleblue,
     title: "Built for Students & Staff",
     text: "A platform for the entire campus community.",
   },
   {
-    icon: dart,
+    icon: targetblue,
     title: "Issue Tracking",
     text: "Keep track of every report from start to finish.",
   },
   {
-    icon: group,
+    icon: departments,
     stat: "15+",
     title: "Departments Supported",
     text: "From maintenance to IT and more.",
   },
   {
-    icon: heart,
+    icon: heartblue,
     title: "A Safer, Cleaner Campus",
     text: "Because your voice matters.",
   },
@@ -323,7 +326,7 @@ export default function HomePage() {
                   </ul>
                 </aside>
                 <div className="dash-main">
-                  <p className="dash-greet">Good morning, Ahmed 👋</p>
+                  {/* <p className="dash-greet">Good morning, Ahmad</p> */}
                   <div className="dash-stats">
                     <div className="stat">
                       <span className="stat-ic tone-blue">
