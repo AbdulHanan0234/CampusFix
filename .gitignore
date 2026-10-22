@@ -13,9 +13,10 @@ build/
 .DS_Store
 Thumbs.db
 
-# IDE
+# IDE / AI tools
 .vscode/
 .idea/
+.claude/
 
 # Logs
 *.log
