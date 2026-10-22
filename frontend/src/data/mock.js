@@ -193,6 +193,7 @@ export const LOST_ITEMS = [
   {
     title: "Black Wallet",
     kind: "Lost",
+    cat: "Personal",
     desc: "Black leather wallet with a student card inside. Has some cash and ID card.",
     location: "Cafeteria",
     date: "Sep 17, 2025",
@@ -201,6 +202,7 @@ export const LOST_ITEMS = [
   {
     title: "Water Bottle",
     kind: "Found",
+    cat: "Personal",
     desc: "Found near the library entrance. Blue water bottle with a white cap.",
     location: "Library",
     date: "Sep 18, 2025",
@@ -209,6 +211,7 @@ export const LOST_ITEMS = [
   {
     title: "Student ID Card",
     kind: "Found",
+    cat: "Academic",
     desc: "Found in the main block, near the stairs. Looks like a university ID card.",
     location: "Main Block",
     date: "Sep 16, 2025",
@@ -217,6 +220,7 @@ export const LOST_ITEMS = [
   {
     title: "Calculator",
     kind: "Lost",
+    cat: "Academic",
     desc: "Scientific calculator (Casio). Last seen in the classroom (CS-101).",
     location: "CS Department",
     date: "Sep 15, 2025",
@@ -225,6 +229,7 @@ export const LOST_ITEMS = [
   {
     title: "Earbuds",
     kind: "Found",
+    cat: "Electronics",
     desc: "Found near the sports complex. White wireless earbuds (no brand visible).",
     location: "Sports Complex",
     date: "Sep 14, 2025",
@@ -233,6 +238,7 @@ export const LOST_ITEMS = [
   {
     title: "Backpack",
     kind: "Lost",
+    cat: "Personal",
     desc: "Black backpack with laptop compartment. Last seen in the library.",
     location: "Library",
     date: "Sep 13, 2025",
