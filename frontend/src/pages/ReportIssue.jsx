@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import rightarrow from "../assets/rightarrow.png";
+import { api, uploadImage } from "../Api";
+import rightarrow from "../assets/right-arrow.png";
 import artificialIntelligence from "../assets/artificial-intelligence.png";
 
 const CATEGORIES = [
@@ -16,8 +17,9 @@ const PRIORITIES = ["Low", "Medium", "High"];
 const EXAMPLE =
   "yo the projector in lab 3 is busted, wont show anything, tried restarting like 5 times";
 
-// mock of the real AI endpoint — parses the student's words into structured fields
-const organizeWithAI = (text) => ({
+// offline/demo filler — used when Gemini can't be reached (no key, free quota
+// used up, network). AI is an optional helper: submitting never depends on it.
+const organizeWithAI = () => ({
   title: "Projector not working in Lab 3",
   category: "IT",
   priority: "High",
@@ -37,26 +39,88 @@ export default function ReportIssue() {
   });
   const [aiText, setAiText] = useState("");
   const [aiDone, setAiDone] = useState(false);
+  const [organizing, setOrganizing] = useState(false);
+  const [aiNote, setAiNote] = useState("");
+  const [photos, setPhotos] = useState([]); // { file, url } previews
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  const runAI = () => {
-    const result = organizeWithAI(aiText);
-    setForm((f) => ({
-      ...f,
-      title: result.title,
-      category: result.category,
-      priority: result.priority,
-      location: result.location,
-      desc: result.polished,
-    }));
-    setAiDone(true);
+  // dropzone selection: PNG/JPG/WebP/GIF, max 3 files, 3 MB each — the same
+  // caps the server enforces
+  const pickPhotos = (e) => {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = ""; // allow re-picking the same file
+    const ok = [];
+    for (const file of picked) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 3 * 1024 * 1024) {
+        setError(`${file.name} is larger than 3 MB.`);
+        continue;
+      }
+      ok.push({ file, url: URL.createObjectURL(file) });
+    }
+    setPhotos((prev) => [...prev, ...ok].slice(0, 3));
   };
 
-  const submit = (e) => {
+  const removePhoto = (index) =>
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+
+  // fills only the fields the AI actually produced, so the student's own
+  // entries are never wiped by an empty answer
+  const applyResult = (r) =>
+    setForm((f) => ({
+      ...f,
+      title: r.title || f.title,
+      category: r.category || f.category,
+      priority: r.priority || f.priority,
+      location: r.location || f.location,
+      desc: r.polished || f.desc,
+    }));
+
+  const runAI = async () => {
+    if (!aiText.trim() || organizing) return;
+    setOrganizing(true);
+    setAiNote("");
+    try {
+      // the backend turns the student's words into structured fields via Gemini
+      const result = await api("/ai/organize", {
+        method: "POST",
+        body: { text: aiText },
+      });
+      applyResult(result);
+      setAiNote("");
+    } catch (err) {
+      // AI is optional — fall back to the demo filler so the flow never blocks
+      applyResult(organizeWithAI());
+      setAiNote(`AI couldn't help right now (${err.message}) — filled a demo example instead.`);
+    } finally {
+      setOrganizing(false);
+      setAiDone(true);
+    }
+  };
+
+  const submit = async (e) => {
     e.preventDefault();
-    // real submit hits the API — for now land on the new issue's detail page
-    navigate("/dashboard/my-issues/1042");
+    setError("");
+    setSubmitting(true);
+    try {
+      // photos upload first (one call each), then the issue references their ids
+      const photoIds = [];
+      for (const file of photos) photoIds.push(await uploadImage(file));
+      const json = await api("/issues", {
+        method: "POST",
+        body: { ...form, photos: photoIds },
+      });
+      navigate(`/dashboard/my-issues/${json.issue._id}`);
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -138,15 +202,44 @@ export default function ReportIssue() {
           </label>
 
           <div className="dash-field">
-            <span>Photos (optional)</span>
-            <div className="dash-dropzone">
+            <span>Photos (optional, up to 3)</span>
+            <label className="dash-dropzone" title="Choose photos">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                hidden
+                onChange={pickPhotos}
+              />
               <b>+</b>
-              <span>Click to upload or drag photos here</span>
-            </div>
+              <span>
+                {photos.length
+                  ? `${photos.length} photo${photos.length === 1 ? "" : "s"} selected — click to add more`
+                  : "Click to upload photos (max 3 MB each)"}
+              </span>
+            </label>
+            {photos.length > 0 && (
+              <div className="detail-photos">
+                {photos.map((p, i) => (
+                  <span className="pick" key={p.url}>
+                    <img src={p.url} alt="" />
+                    <button
+                      type="button"
+                      aria-label={`Remove photo ${i + 1}`}
+                      onClick={() => removePhoto(i)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
-          <button className="dash-btn dash-submit" type="submit">
-            Submit Report <img src={rightarrow} alt="" />
+          {error && <p className="detail-nophotos">{error}</p>}
+
+          <button className="dash-btn dash-submit" type="submit" disabled={submitting}>
+            {submitting ? "Submitting…" : "Submit Report"} <img src={rightarrow} alt="" />
           </button>
         </section>
       </form>
@@ -167,13 +260,24 @@ export default function ReportIssue() {
             onChange={(e) => setAiText(e.target.value)}
             placeholder="e.g. The projector in lab 3 is not working..."
           />
-          <button className="dash-btn" type="button" onClick={runAI}>
-            Organize with AI
+          <button
+            className="dash-btn"
+            type="button"
+            onClick={runAI}
+            disabled={!aiText.trim() || organizing}
+          >
+            {organizing ? "Organizing…" : "Organize with AI"}
           </button>
           {aiDone ? (
             <div className="dash-airesult">
               <b>✓ Form filled — review and submit</b>
-              <small>Category: IT / Hardware · Priority: High · Location: Computer Lab 3</small>
+              {form.category && (
+                <small>
+                  Category: {form.category} · Priority: {form.priority}
+                  {form.location ? ` · Location: ${form.location}` : ""}
+                </small>
+              )}
+              {aiNote && <small>{aiNote}</small>}
             </div>
           ) : (
             <button

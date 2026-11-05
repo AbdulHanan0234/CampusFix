@@ -1,24 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api, storedUser } from "../Api";
 import IssueList from "./IssueList";
-import { ISSUES } from "../data/mock";
 
 const FILTERS = ["All", "Open", "In Progress", "Assigned", "Resolved"];
 
 export default function MyIssues() {
+  const [issues, setIssues] = useState(null); // null = still loading
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
+  const role = storedUser()?.role || "student";
+  const staffView = role !== "student";
 
-  const shown = ISSUES.filter(
+  useEffect(() => {
+    let alive = true;
+    api("/issues")
+      .then((j) => alive && setIssues(j.issues))
+      .catch(() => alive && setIssues([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const shown = (issues || []).filter(
     (i) =>
       (filter === "All" || i.status === filter) &&
-      i.title.toLowerCase().includes(query.toLowerCase())
+      (i.title + " " + i.location).toLowerCase().includes(query.toLowerCase())
   );
 
   return (
     <div className="dash-page">
       <div className="dash-pagehead">
-        <h1>My Issues</h1>
-        <p>Track every issue you&apos;ve reported, from report to resolution.</p>
+        <h1>{staffView ? "All Issues" : "My Issues"}</h1>
+        <p>
+          {staffView
+            ? "Everything students have reported, newest first."
+            : "Track every issue you've reported, from report to resolution."}
+        </p>
       </div>
 
       <section className="dash-card">
@@ -41,12 +58,14 @@ export default function MyIssues() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search my issues..."
+              placeholder={staffView ? "Search all issues..." : "Search my issues..."}
             />
           </label>
         </div>
 
-        {shown.length ? (
+        {issues === null ? (
+          <p className="detail-nophotos">Loading…</p>
+        ) : shown.length ? (
           <IssueList issues={shown} />
         ) : (
           <div className="dash-empty">

@@ -1,20 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { api, storedUser } from "../Api";
 import logo from "../assets/logo.png";
 import bell from "../assets/bell.png";
-import { NOTIFICATIONS } from "../data/mock";
-import "./dashboard.css";
+import "./Dashboard.css";
 
-const API_URL = "http://localhost:5000/api/auth";
-
-// sidebar menu — every tab renders from its own jsx file via the nested route.
-// icons: drop the named PNG into src/assets and pass it here (bell already wired)
-const MENU = [
+// sidebar menu — role decides the labels and entries. staff/admin fix problems
+// rather than report them, so they get no Report Issue tab; the admin manages
+// staff under "Staff Management". icons: drop the named PNG into src/assets
+const menuFor = (role) => [
   { label: "Dashboard", to: "", end: true, icon: null }, // home.png
-  { label: "Report Issue", to: "/report", icon: null }, // reportissue.png
-  { label: "My Issues", to: "/my-issues", icon: null }, // myissues.png
+  ...(role === "student"
+    ? [{ label: "Report Issue", to: "/report", icon: null }] // reportissue.png
+    : []),
+  { label: role === "student" ? "My Issues" : "All Issues", to: "/my-issues", icon: null }, // myissues.png
   { label: "Lost & Found", to: "/lost-found", icon: null }, // lostfound.png
   { label: "Notifications", to: "/notifications", icon: bell },
+  ...(role === "admin"
+    ? [{ label: "Staff Management", to: "/admin", icon: null }] // staff.png
+    : []),
   { label: "Profile", to: "/profile", icon: null }, // profile.png
 ];
 
@@ -26,6 +30,9 @@ const SearchIc = () => <span className="dash-searchic" aria-hidden="true" />;
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
+  const user = storedUser() || { name: "Student" };
+  const role = user.role || "student";
+  const [unread, setUnread] = useState(0);
 
   // not logged in? the dashboard is pointless — go log in first
   useEffect(() => {
@@ -34,11 +41,21 @@ export default function DashboardLayout() {
     }
   }, [navigate]);
 
-  const user = JSON.parse(localStorage.getItem("user") || "null") || {
-    name: "Student",
-  };
-  const initial = user.name.charAt(0).toUpperCase();
-  const unread = NOTIFICATIONS.filter((n) => n.unread).length;
+  // live unread badge — polled lightly, so new messages/status updates show up
+  // in the shell no matter which tab you're on
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api("/notifications/unread-count")
+        .then((j) => alive && setUnread(j.count))
+        .catch(() => {}); // polling errors stay silent
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   const logout = () => {
     const token = localStorage.getItem("token");
@@ -48,10 +65,9 @@ export default function DashboardLayout() {
     navigate("/");
     // …and tell the server to expire the token so it can't be reused
     if (token) {
-      fetch(`${API_URL}/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {}); // offline? the local logout already happened
+      api("/auth/logout", { method: "POST" }).catch(
+        () => {} // offline? the local logout already happened
+      );
     }
   };
 
@@ -69,15 +85,20 @@ export default function DashboardLayout() {
         </label>
 
         <div className="dash-topactions">
-          <button className="dash-bell" type="button" aria-label="Notifications">
+          <button
+            className="dash-bell"
+            type="button"
+            aria-label="Notifications"
+            onClick={() => navigate("/dashboard/notifications")}
+          >
             <img src={bell} alt="" />
             {unread > 0 && <span className="dash-bellbadge">{unread}</span>}
           </button>
           <div className="dash-account">
-            <span className="dash-avatar">{initial}</span>
+            <span className="dash-avatar">{(user.name || "S").charAt(0)}</span>
             <span className="dash-accountname">
               <b>{user.name}</b>
-              <small>Student</small>
+              <small>{role.charAt(0).toUpperCase() + role.slice(1)}</small>
             </span>
           </div>
         </div>
@@ -86,7 +107,7 @@ export default function DashboardLayout() {
       {/* ---------- sidebar ---------- */}
       <aside className="dash-sidebar">
         <nav className="dash-menu">
-          {MENU.map(({ label, to, end, icon }) => (
+          {menuFor(role).map(({ label, to, end, icon }) => (
             <NavLink
               key={label}
               to={`/dashboard${to}`}

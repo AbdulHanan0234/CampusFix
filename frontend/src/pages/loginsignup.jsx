@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { api } from "../Api";
 import logo from "../assets/logo.png";
 import clock from "../assets/clock.png";
 import google from "../assets/google.png";
@@ -8,7 +9,7 @@ import users from "../assets/users.png";
 import rightarrow from "../assets/right-arrow.png";
 import signupheroimg from "../assets/signupheroimg.png";
 import loginheroimg from "../assets/loginheroimg.png";
-import "./loginsignup.css";
+import "./LoginSignup.css";
 
 const FEATURES = [
   {
@@ -48,8 +49,6 @@ const Field = ({ label, type = "text", show, onToggle, ...props }) => (
   </label>
 );
 
-const API_URL = "http://localhost:5000/api/auth";
-
 export default function LoginSignup({ initialMode = "signup" }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -71,14 +70,11 @@ export default function LoginSignup({ initialMode = "signup" }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/${signup ? "signup" : "login"}`, {
+      // api() throws with the backend's message on any non-OK reply
+      const json = await api(`/auth/${signup ? "signup" : "login"}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: data,
       });
-      const json = await res.json(); // backend always replies { message, token?, user? }
-
-      if (!res.ok) throw new Error(json.message || "Something went wrong.");
 
       // logged in / signed up — keep the token so we can prove who we are later
       localStorage.setItem("token", json.token);
@@ -157,7 +153,7 @@ export default function LoginSignup({ initialMode = "signup" }) {
       {/* ---------- right form panel ---------- */}
       <main className="panel">
         <section className={signup ? "card" : "card card-login"}>
-          <h2>{signup ? "Create Your Account" : "Welcome Back! 👋"}</h2>
+          <h2>{signup ? "Create Your Account" : "Welcome Back!"}</h2>
           <p className="sub">
             {signup
               ? "Join CampusFix and be part of a better campus."

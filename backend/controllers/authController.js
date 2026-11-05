@@ -6,6 +6,19 @@ import BlockedToken from "../models/BlockedToken.js";
 const signToken = (user) =>
   jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+// The one user shape sent to the frontend — everything the Profile tab shows.
+// Never includes the password hash (select: false already guards this).
+const publicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  dept: user.dept,
+  studentId: user.studentId,
+  phone: user.phone,
+  prefs: user.prefs,
+});
+
 // POST /api/auth/signup
 export const signup = async (req, res) => {
   try {
@@ -31,13 +44,14 @@ export const signup = async (req, res) => {
         .json({ message: "An account with this email already exists." });
     }
 
-    // the pre("save") hook in the User model hashes the password automatically
+    // the pre("save") hook in the User model hashes the password automatically.
+    // only these fields are picked up — a client cannot sign up as staff/admin
     const user = await User.create({ name, email, password });
 
     res.status(201).json({
       message: "Account created successfully.",
       token: signToken(user),
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (err) {
     console.error("signup error:", err); // shows the real cause in the terminal
@@ -70,7 +84,7 @@ export const login = async (req, res) => {
     res.json({
       message: "Logged in successfully.",
       token: signToken(user),
-      user: { id: user._id, name: user.name, email: user.email },
+      user: publicUser(user),
     });
   } catch (err) {
     console.error("login error:", err);
@@ -81,9 +95,37 @@ export const login = async (req, res) => {
 // GET /api/auth/me — protected route that returns the logged-in user.
 // Frontend can call this on page load to restore a session from the token.
 export const me = async (req, res) => {
-  res.json({
-    user: { id: req.user._id, name: req.user.name, email: req.user.email },
-  });
+  res.json({ user: publicUser(req.user) });
+};
+
+// PATCH /api/auth/profile — update the editable Profile fields. email and role
+// are identity/permission and are refused here (and ignored at signup), so the
+// only way either changes is the admin CLI — never the HTTP surface.
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, dept, studentId, phone, prefs } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (name !== undefined) user.name = String(name).trim();
+    if (dept !== undefined) user.dept = dept;
+    if (studentId !== undefined) user.studentId = studentId;
+    if (phone !== undefined) user.phone = phone;
+    // prefs arrives partially ({ inApp: false }) — merge over the current values
+    if (prefs !== undefined && typeof prefs === "object" && prefs !== null) {
+      user.prefs = {
+        email: user.prefs?.email ?? true,
+        inApp: user.prefs?.inApp ?? true,
+        weekly: user.prefs?.weekly ?? false,
+        ...prefs,
+      };
+    }
+
+    await user.save(); // runs schema validation on everything
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    console.error("updateProfile error:", err);
+    res.status(500).json({ message: "Server error. Please try again." });
+  }
 };
 
 // POST /api/auth/logout (protected) — block this exact token until the moment

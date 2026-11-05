@@ -15,6 +15,29 @@ const userSchema = new mongoose.Schema(
     // select: false → the password hash is NEVER returned in queries
     // unless explicitly requested (see login controller)
     password: { type: String, required: true, minlength: 6, select: false },
+    // students see their own reports; staff see all issues and answer chats;
+    // admin additionally manages staff accounts (exactly one, via scripts/createAdmin.js)
+    role: {
+      type: String,
+      enum: ["student", "staff", "admin"],
+      default: "student",
+      index: true,
+    },
+    // what this person works on — set by the admin when creating a staff
+    // account ("IT Technician", "Electrician", …) so everyone's job is known
+    position: { type: String, trim: true },
+    // profile extras edited on the Profile tab. phone is private — it is only
+    // ever returned to the account owner, never to other users
+    dept: { type: String, trim: true },
+    studentId: { type: String, trim: true },
+    phone: { type: String, trim: true },
+    // notification preferences toggled on the Profile tab. email/weekly are
+    // stored for a future mailer — inApp is enforced today (utils/notify.js)
+    prefs: {
+      email: { type: Boolean, default: true },
+      inApp: { type: Boolean, default: true },
+      weekly: { type: Boolean, default: false },
+    },
   },
   { timestamps: true } // adds createdAt / updatedAt automatically
 );

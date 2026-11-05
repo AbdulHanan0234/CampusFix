@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../Api";
 import logo from "../assets/logo.png";
 import thunder from "../assets/thunder.png";
 import clock from "../assets/clock.png";
@@ -28,11 +29,7 @@ import peopleblue from "../assets/peopleblue.png";
 import targetblue from "../assets/targetblue.png";
 import heartblue from "../assets/heartblue.png";
 import departments from "../assets/departments.png";
-import "./homepage.css";
-
-const API_URL = "http://localhost:5000/api/auth";
-
-
+import "./Homepage.css";
 
 // Renders the asset if available, otherwise a tinted placeholder block.
 const Slot = ({ src, size = 24 }) =>
@@ -214,10 +211,9 @@ export default function HomePage() {
     setLoggedIn(false); // navbar flips back to Login / Get Started
     // expire the token on the server so it can't be reused
     if (token) {
-      fetch(`${API_URL}/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {}); // offline? the local logout already happened
+      api("/auth/logout", { method: "POST" }).catch(
+        () => {} // offline? the local logout already happened
+      );
     }
   };
 
@@ -326,7 +322,6 @@ export default function HomePage() {
                   </ul>
                 </aside>
                 <div className="dash-main">
-                  {/* <p className="dash-greet">Good morning, Ahmad</p> */}
                   <div className="dash-stats">
                     <div className="stat">
                       <span className="stat-ic tone-blue">

@@ -1,25 +1,54 @@
-import { useState } from "react";
-import rightarrow from "../assets/rightarrow.png";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import rightarrow from "../assets/right-arrow.png";
 import lostfoundservice from "../assets/lostfoundservice.png";
-import { LOST_ITEMS, LOST_STATS, LOST_STEPS } from "../data/mock";
+import { api } from "../Api";
+import AuthImg from "../components/AuthImg";
 
 const KINDS = ["All", "Lost", "Found", "Matched"];
-const CATEGORIES = ["Personal", "Academic", "Electronics"];
+const CATEGORIES = ["Personal", "Academic", "Electronics", "Other"];
+
+// static copy — moved out of the deleted mock data file
+const LOST_STEPS = [
+  "Post your lost or found item with details and photos (optional).",
+  "Chat privately with the other person to verify it's a match.",
+  "Once you're sure, share contact details inside the chat.",
+  "Arrange a safe handover and mark the item as returned!",
+];
 
 export default function LostFound() {
+  const [items, setItems] = useState(null); // null = still loading
   const [kind, setKind] = useState("All");
   const [cat, setCat] = useState("");
   const [query, setQuery] = useState("");
 
-  const shown = LOST_ITEMS.filter(
+  useEffect(() => {
+    let alive = true;
+    api("/items")
+      .then((j) => alive && setItems(j.items))
+      .catch(() => alive && setItems([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const shown = (items || []).filter(
     (item) =>
       (kind === "All" ||
-        (kind === "Matched" ? item.match : item.kind === kind)) &&
-      (!cat || item.cat === cat) &&
+        (kind === "Matched" ? item.status === "Matched" : item.kind === kind)) &&
+      (!cat || item.category === cat) &&
       (item.title + " " + item.desc)
         .toLowerCase()
         .includes(query.toLowerCase())
   );
+
+  // quick stats come straight from the fetched list
+  const stats = [
+    { value: (items || []).filter((i) => i.kind === "Lost").length, label: "Lost Items", tone: "red" },
+    { value: (items || []).filter((i) => i.kind === "Found").length, label: "Found Items", tone: "green" },
+    { value: (items || []).filter((i) => i.status === "Matched").length, label: "In Chat", tone: "indigo" },
+    { value: (items || []).filter((i) => i.status === "Returned").length, label: "Returned", tone: "blue" },
+  ];
 
   return (
     <div className="dash-twoCol">
@@ -36,12 +65,14 @@ export default function LostFound() {
               get items back where they belong.
             </p>
             <div className="lf-actions">
-              <button className="dash-cta lost" type="button">
-                🔴 I Lost Something <img src={rightarrow} alt="" />
-              </button>
-              <button className="dash-cta found" type="button">
-                🟢 I Found Something <img src={rightarrow} alt="" />
-              </button>
+              <Link className="dash-cta lost" to="/dashboard/lost-found/new?kind=lost">
+                <i className="lf-dot lost" /> I Lost Something{" "}
+                <img src={rightarrow} alt="" />
+              </Link>
+              <Link className="dash-cta found" to="/dashboard/lost-found/new?kind=found">
+                <i className="lf-dot found" /> I Found Something{" "}
+                <img src={rightarrow} alt="" />
+              </Link>
             </div>
           </div>
           <img className="lf-art" src={lostfoundservice} alt="" />
@@ -88,41 +119,53 @@ export default function LostFound() {
 
         {/* item grid */}
         <div className="lf-grid">
-          {shown.map((item) => (
-            <article className="dash-card lf-item" key={item.title}>
-              <span className="dash-photo" aria-hidden="true" />
-              <div className="lf-iteminfo">
-                <div className="lf-itemtitle">
-                  <h3>{item.title}</h3>
-                  <span
-                    className={item.kind === "Lost" ? "dash-pill p-high" : "dash-pill p-low"}
-                  >
-                    {item.kind === "Lost" ? "+ Lost" : "✓ Found"}
-                  </span>
+          {items === null ? (
+            <p className="detail-nophotos">Loading…</p>
+          ) : (
+            <>
+              {shown.map((item) => (
+                <Link className="dash-card lf-item" to={`/dashboard/lost-found/${item._id}`} key={item._id}>
+                  <AuthImg id={item.image} alt={item.title} />
+                  <div className="lf-iteminfo">
+                    <div className="lf-itemtitle">
+                      <h3>{item.title}</h3>
+                      <span
+                        className={
+                          item.kind === "Lost" ? "dash-pill p-high" : "dash-pill p-low"
+                        }
+                      >
+                        {item.kind === "Lost" ? "Lost" : "Found"}
+                      </span>
+                    </div>
+                    <p>{item.desc}</p>
+                    <div className="lf-itemmeta">
+                      <span>📍 {item.location || "—"}</span>
+                      <span>🗓 {new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <small className={item.status === "Open" ? "lf-nomatch" : "lf-match"}>
+                      {item.status === "Returned"
+                        ? "✓ Returned home"
+                        : item.status === "Matched"
+                          ? "✦ Chat in progress"
+                          : "✦ Waiting for contact"}
+                    </small>
+                  </div>
+                  <img className="dash-rowarrow" src={rightarrow} alt="" />
+                </Link>
+              ))}
+              {items.length === 0 && (
+                <div className="dash-empty wide">
+                  <p>Nothing posted yet.</p>
+                  <span>Be the first — use the buttons above to post an item.</span>
                 </div>
-                <p>{item.desc}</p>
-                <div className="lf-itemmeta">
-                  <span>📍 {item.location}</span>
-                  <span>🗓 {item.date}</span>
+              )}
+              {items.length > 0 && shown.length === 0 && (
+                <div className="dash-empty wide">
+                  <p>No items match.</p>
+                  <span>Try another filter or search term.</span>
                 </div>
-                {item.match ? (
-                  <small className="lf-match">
-                    ✦ {/^(High|Medium|Low)$/.test(item.match)
-                      ? `Match confidence: ${item.match}`
-                      : item.match}
-                  </small>
-                ) : (
-                  <small className="lf-nomatch">✦ No matches yet</small>
-                )}
-              </div>
-              <img className="dash-rowarrow" src={rightarrow} alt="" />
-            </article>
-          ))}
-          {!shown.length && (
-            <div className="dash-empty wide">
-              <p>No items found.</p>
-              <span>Try another filter or search term.</span>
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -134,7 +177,7 @@ export default function LostFound() {
             <h2>Quick Stats</h2>
           </div>
           <div className="lf-stats">
-            {LOST_STATS.map((s) => (
+            {stats.map((s) => (
               <div className={`lf-stat t-${s.tone}`} key={s.label}>
                 <b>{s.value}</b>
                 <small>{s.label}</small>

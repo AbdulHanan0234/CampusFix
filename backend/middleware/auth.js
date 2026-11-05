@@ -23,11 +23,12 @@ const protect = async (req, res, next) => {
         .json({ message: "Session ended, please log in again" });
     }
 
-    req.user = await User.findById(decoded.id);
-    req.token = token; // logout needs the raw token to blacklist it
-    if (!req.user) {
+    const user = await User.findById(decoded.id);
+    if (!user) {
       return res.status(401).json({ message: "User no longer exists" });
     }
+    req.user = user;
+    req.token = token; // logout needs the raw token to blacklist it
     next();
   } catch {
     return res
