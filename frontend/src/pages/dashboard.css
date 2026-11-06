@@ -1879,6 +1879,14 @@
   border-radius: 12px;
 }
 
+/* staff position shown next to their name in chats */
+.chat-pos {
+  font-style: normal;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 11.5px;
+}
+
 /* notifications render as buttons for the deep-link click */
 button.dash-notifrow {
   width: 100%;

@@ -111,7 +111,7 @@ export default function ReportIssue() {
     try {
       // photos upload first (one call each), then the issue references their ids
       const photoIds = [];
-      for (const file of photos) photoIds.push(await uploadImage(file));
+      for (const p of photos) photoIds.push(await uploadImage(p.file));
       const json = await api("/issues", {
         method: "POST",
         body: { ...form, photos: photoIds },

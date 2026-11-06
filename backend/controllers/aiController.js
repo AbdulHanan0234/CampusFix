@@ -8,15 +8,62 @@ import {
 // protected so strangers can't burn the free quota.
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const MAX_TEXT = 2000;
+const TIMEOUT_MS = 45_000; // free tier can be slow under load
+const RETRY_DELAYS = [3000, 6000]; // wait before retrying a 503/429
 
 const PROMPT = `You are the AI assistant inside a campus issue-reporting app called CampusFix.
-A student describes a problem in their own casual words. Organize it into a proper complaint.
-Return JSON with exactly these fields:
-- "title": short summary, max 60 characters
+A student describes a problem in their own casual words. Rewrite it as a clear, formal
+complaint. A false report harms someone — so change the WORDING, never the FACTS.
+
+Rules for "polished":
+- Rewrite the student's slang into formal sentences (1-4), fixing grammar and structure
+- Keep EVERY fact they gave: room numbers, times, durations, what they tried, who is affected
+- Add NOTHING: no causes, consequences, guesses, requests, or urgency they did not state
+  (never write "urgent", "immediately", "please arrange" unless the student said it)
+- If something is unknown, omit it — never invent it
+
+Example of correct behavior:
+Student wrote: "yo the projector in lab 3 is busted, wont show anything, tried restarting like 5 times"
+GOOD polished: "The projector in Lab 3 is not working and does not display anything. I tried restarting it about five times, but the problem remains."
+BAD polished (adds facts that were never said): "…This is disrupting classes and an urgent technician visit is required."
+
+Other fields:
+- "title": short neutral summary of what the student said, max 60 characters, no added words
 - "category": exactly one of ${JSON.stringify(ISSUE_CATEGORIES)}
-- "priority": exactly one of ${JSON.stringify(ISSUE_PRIORITIES)} (High = safety risk or many people affected)
-- "location": the place if the student mentioned one, otherwise ""
-- "polished": a clear, formal 2-4 sentence complaint description, strictly based on what the student said — never invent facts`;
+- "priority": exactly one of ${JSON.stringify(ISSUE_PRIORITIES)} — High ONLY if the student
+  described danger, injury risk, or said it is urgent themselves; Medium when it disrupts
+  study or work; Low for minor issues. Never raise priority for drama.
+- "location": exactly the place the student named, otherwise ""
+Return JSON with exactly these fields.`;
+
+// one Gemini call; 503/429 are retried — the free tier regularly spikes in
+// demand and Google's own advice is "usually temporary, try again"
+const callGemini = async (key, text) => {
+  let lastRes;
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt - 1]));
+    }
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${PROMPT}\n\nStudent wrote: "${text}"` }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }
+    );
+    if (res.status === 503 || res.status === 429) {
+      lastRes = res;
+      continue; // spike — back off and try again
+    }
+    return res;
+  }
+  return lastRes; // every attempt hit a spike — caller reports it
+};
 
 // call Gemini and shape the reply into our form fields; throws Error with a
 // friendly message on any failure
@@ -28,18 +75,7 @@ const organizeWithGemini = async (text) => {
     throw err;
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `${PROMPT}\n\nStudent wrote: "${text}"` }] }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
-      }),
-      signal: AbortSignal.timeout(25_000),
-    }
-  );
+  const res = await callGemini(key, text);
 
   if (!res.ok) {
     let detail = "";
@@ -58,6 +94,9 @@ const organizeWithGemini = async (text) => {
     }
     if (res.status === 429) {
       throw new Error("Gemini free quota is used up right now — try again in a minute.");
+    }
+    if (res.status === 503) {
+      throw new Error("Gemini is overloaded right now — try again in a minute.");
     }
     throw new Error(detail || "Gemini request failed.");
   }

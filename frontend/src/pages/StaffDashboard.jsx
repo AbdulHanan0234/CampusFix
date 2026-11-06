@@ -17,8 +17,9 @@ const STAT_ICONS = {
   hub: hubblue,
 };
 
-// the work overview for staff/admin — everything reported on campus at a
-// glance: issue stats, the latest issues and the lost & found desk
+// the work overview for staff/admin. staff see their department's queue (the
+// server routes issues by category); admin sees the whole campus. no Lost &
+// Found here — admin reaches it from the menu when oversight is needed.
 const CARDS = (s) => [
   { icon: "report", label: "Total Issues", value: s.total, caption: `${s.open} still open` },
   { icon: "clock", label: "Pending", value: s.pending, caption: "awaiting first action" },
@@ -38,7 +39,6 @@ const CARDS = (s) => [
 
 export default function StaffDashboard() {
   const [issues, setIssues] = useState(null); // null = still loading
-  const [items, setItems] = useState(null);
   const [notifs, setNotifs] = useState(null);
 
   useEffect(() => {
@@ -46,9 +46,6 @@ export default function StaffDashboard() {
     api("/issues")
       .then((j) => alive && setIssues(j.issues))
       .catch(() => alive && setIssues([]));
-    api("/items")
-      .then((j) => alive && setItems(j.items))
-      .catch(() => alive && setItems([]));
     api("/notifications")
       .then((j) => alive && setNotifs(j.notifications))
       .catch(() => alive && setNotifs([]));
@@ -59,13 +56,8 @@ export default function StaffDashboard() {
 
   const user = storedUser();
   const firstName = (user?.name || "Staff").split(" ")[0];
+  const isStaff = user?.role === "staff";
   const stats = computeIssueStats(issues || []);
-  const lfStats = [
-    { value: (items || []).filter((i) => i.kind === "Lost").length, label: "Lost", tone: "red" },
-    { value: (items || []).filter((i) => i.kind === "Found").length, label: "Found", tone: "green" },
-    { value: (items || []).filter((i) => i.status === "Matched").length, label: "In Chat", tone: "indigo" },
-    { value: (items || []).filter((i) => i.status === "Returned").length, label: "Returned", tone: "blue" },
-  ];
 
   return (
     <div className="dash-twoCol">
@@ -75,7 +67,11 @@ export default function StaffDashboard() {
             <h1>
               {greeting()}, {firstName} <span>🛠</span>
             </h1>
-            <p>Here&apos;s what needs attention on campus today.</p>
+            <p>
+              {isStaff && user?.department
+                ? `${user.department} desk — here's what needs your department today.`
+                : "Here's what needs attention on campus today."}
+            </p>
           </div>
           <div className="dash-herodate">
             <b>{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</b>
@@ -99,10 +95,10 @@ export default function StaffDashboard() {
           ))}
         </div>
 
-        {/* latest reports — the work queue */}
+        {/* the work queue — staff: their department, admin: everything */}
         <section className="dash-card">
           <div className="dash-cardhead">
-            <h2>Latest Issues</h2>
+            <h2>{isStaff ? "Department Issues" : "Latest Issues"}</h2>
             <Link className="dash-viewall" to="/dashboard/my-issues">
               View All <img src={rightarrow} alt="" />
             </Link>
@@ -113,50 +109,18 @@ export default function StaffDashboard() {
             <IssueList issues={issues.slice(0, 6)} />
           ) : (
             <div className="dash-empty">
-              <p>No issues reported yet.</p>
-              <span>Student reports will appear here as they come in.</span>
+              <p>{isStaff ? "No issues in your department." : "No issues reported yet."}</p>
+              <span>
+                {isStaff
+                  ? "Issues matching your department will appear here as students report them."
+                  : "Student reports will appear here as they come in."}
+              </span>
             </div>
           )}
         </section>
       </div>
 
       <aside className="dash-rail">
-        {/* lost & found desk summary */}
-        <section className="dash-card">
-          <div className="dash-cardhead">
-            <h2>Lost &amp; Found</h2>
-            <Link className="dash-viewall" to="/dashboard/lost-found">
-              View All <img src={rightarrow} alt="" />
-            </Link>
-          </div>
-          <div className="lf-stats">
-            {lfStats.map((s) => (
-              <div className={`lf-stat t-${s.tone}`} key={s.label}>
-                <b>{s.value}</b>
-                <small>{s.label}</small>
-              </div>
-            ))}
-          </div>
-          {items !== null && items.slice(0, 3).map((item) => (
-            <Link className="dash-issuerow" to={`/dashboard/lost-found/${item._id}`} key={item._id}>
-              <span className="dash-thumb t-blue">{item.title?.charAt(0)}</span>
-              <span className="dash-issueinfo">
-                <b>{item.title}</b>
-                <small>
-                  {item.kind} <i>•</i> {item.location || "—"}
-                </small>
-              </span>
-              <span className={`dash-status s-${item.status?.toLowerCase()}`}>
-                {item.status}
-              </span>
-              <img className="dash-rowarrow" src={rightarrow} alt="" />
-            </Link>
-          ))}
-          {items !== null && !items.length && (
-            <p className="detail-nophotos">No items posted yet.</p>
-          )}
-        </section>
-
         <section className="dash-card">
           <div className="dash-cardhead">
             <h2>Recent Notifications</h2>

@@ -10,8 +10,13 @@ export default function IssueDetail() {
   const { id } = useParams();
   const [issue, setIssue] = useState(null); // null = loading, false = not found
   const [savingStatus, setSavingStatus] = useState(false);
-  const role = storedUser()?.role || "student";
-  const staffView = role === "staff" || role === "admin";
+  const me = storedUser();
+  const role = me?.role || "student";
+  // only the department the issue was routed to (or admin) may progress it
+  const canModerate =
+    role === "admin" ||
+    (role === "staff" &&
+      (issue?.routedTo || []).some((rid) => String(rid) === String(me?.id)));
 
   useEffect(() => {
     let alive = true;
@@ -99,7 +104,7 @@ export default function IssueDetail() {
                 <span>📍 {issue.location}</span>
                 <span>🗓 Reported {ago(issue.createdAt)}</span>
               </div>
-              {staffView && (
+              {canModerate && (
                 <label className="detail-statuspick">
                   <small>Status</small>
                   <select

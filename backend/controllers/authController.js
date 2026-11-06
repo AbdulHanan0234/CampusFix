@@ -16,6 +16,9 @@ const publicUser = (user) => ({
   dept: user.dept,
   studentId: user.studentId,
   phone: user.phone,
+  // staff identity shown across the dashboard (routing context)
+  position: user.position,
+  department: user.department,
   prefs: user.prefs,
 });
 

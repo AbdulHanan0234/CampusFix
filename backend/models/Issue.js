@@ -28,6 +28,10 @@ const issueSchema = new mongoose.Schema(
     location: { type: String, required: true, trim: true },
     desc: { type: String, required: true, trim: true },
     photos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
+    // the staff desks this issue was routed to (department match at creation,
+    // falling back to department "Other" when no department matches). Staff
+    // see, chat on, and progress only the issues routed to them.
+    routedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     // timeline rendered on the Issue Detail page — appended on every status change
     statusHistory: [
       {

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { api, storedUser } from "../Api";
 import { computeIssueStats } from "../lib/IssueStats";
 
-// editable profile fields (email/role are identity — the server refuses those)
-const EDITABLE = [
+// editable profile fields (email/role are identity — the server refuses those).
+// staff don't carry student IDs; their position/department come from the admin
+const EDITABLE = (role) => [
   { key: "name", label: "Full Name" },
-  { key: "studentId", label: "Student ID" },
+  ...(role === "student" ? [{ key: "studentId", label: "Student ID" }] : []),
   { key: "dept", label: "Department" },
   { key: "phone", label: "Phone" },
 ];
@@ -84,7 +85,9 @@ export default function Profile() {
               <h2>{user.name}</h2>
               <small>
                 {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Student"}
-                {user.dept ? ` · ${user.dept}` : ""}
+                {user.position ? ` · ${user.position}` : ""}
+                {user.department ? ` · ${user.department}` : ""}
+                {!user.position && user.dept ? ` · ${user.dept}` : ""}
               </small>
             </div>
             <button
@@ -102,7 +105,7 @@ export default function Profile() {
             </div>
             {editing ? (
               <form className="profile-fields" onSubmit={save}>
-                {EDITABLE.map(({ key, label }) => (
+                {EDITABLE(user.role).map(({ key, label }) => (
                   <label className="dash-field" key={key}>
                     <span>{label}</span>
                     <input type="text" name={key} defaultValue={user[key] || ""} />
@@ -119,7 +122,16 @@ export default function Profile() {
               </form>
             ) : (
               <div className="profile-fields">
-                {[...EDITABLE, { key: "email", label: "Email" }].map(({ key, label }) => (
+                {[
+                  ...EDITABLE(user.role),
+                  ...(user.role !== "student"
+                    ? [
+                        { key: "position", label: "Position" },
+                        { key: "department", label: "Department (work)" },
+                      ]
+                    : []),
+                  { key: "email", label: "Email" },
+                ].map(({ key, label }) => (
                   <div className="profile-field" key={key}>
                     <small>{label}</small>
                     <b>{user[key] || "—"}</b>

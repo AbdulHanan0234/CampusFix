@@ -128,7 +128,12 @@ export default function Chat({ refType, refId, onConversationOpen }) {
                   {(m.sender?.name || "?").charAt(0)}
                 </span>
                 <div className="dash-commentbody">
-                  <b>{own ? "You" : m.sender?.name}</b>
+                  <b>
+                    {own ? "You" : m.sender?.name}
+                    {!own && m.sender?.position && (
+                      <em className="chat-pos"> · {m.sender.position}</em>
+                    )}
+                  </b>
                   <p>{m.text}</p>
                   <small>{ago(m.createdAt)}</small>
                 </div>

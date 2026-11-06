@@ -1,4 +1,4 @@
-import { Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { storedUser } from './Api'
 import HomePage from './pages/Homepage'
 import LoginSignup from './pages/LoginSignup'
@@ -33,6 +33,13 @@ function ItemDetailPage() {
   return <ItemDetail key={id} id={id} />
 }
 
+// staff fix problems, they don't report them or browse lost & found — the
+// server also refuses anything sensitive, this just keeps the URLs honest
+function StudentOnly({ children }) {
+  const role = storedUser()?.role || 'student'
+  return role === 'student' ? children : <Navigate to="/dashboard" replace />
+}
+
 const App = () => {
   return (
     <Routes>
@@ -42,12 +49,12 @@ const App = () => {
       {/* one jsx file per dashboard tab, shared shell, nested routing */}
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<RoleHome />} />
-        <Route path="report" element={<ReportIssue />} />
+        <Route path="report" element={<StudentOnly><ReportIssue /></StudentOnly>} />
         <Route path="my-issues" element={<MyIssues />} />
         <Route path="my-issues/:id" element={<IssueDetailPage />} />
-        <Route path="lost-found" element={<LostFound />} />
-        <Route path="lost-found/new" element={<PostItem />} />
-        <Route path="lost-found/:id" element={<ItemDetailPage />} />
+        <Route path="lost-found" element={<StudentOnly><LostFound /></StudentOnly>} />
+        <Route path="lost-found/new" element={<StudentOnly><PostItem /></StudentOnly>} />
+        <Route path="lost-found/:id" element={<StudentOnly><ItemDetailPage /></StudentOnly>} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="admin" element={<Admin />} />
         <Route path="profile" element={<Profile />} />

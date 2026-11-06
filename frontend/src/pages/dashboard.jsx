@@ -3,23 +3,50 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api, storedUser } from "../Api";
 import logo from "../assets/logo.png";
 import bell from "../assets/bell.png";
+import bellgrey from "../assets/bellgrey.png";
+import lostfoundgrey from "../assets/lostfoundgrey.png";
+import lostfoundblue from "../assets/lostfoundblue.png";
+import homegrey from "../assets/homegrey.png";
+import homeblue from "../assets/homeblue.png";
+import moregrey from "../assets/moregrey.png";
+import moreblue from "../assets/moreblue.png";
+import menugrey from "../assets/menugrey.png";
+import menublue from "../assets/menublue.png";
+import persongrey from "../assets/persongrey.png";
+import personblue from "../assets/personblue.png";
+import users from "../assets/users.png";
 import "./Dashboard.css";
 
-// sidebar menu — role decides the labels and entries. staff/admin fix problems
-// rather than report them, so they get no Report Issue tab; the admin manages
-// staff under "Staff Management". icons: drop the named PNG into src/assets
+// sidebar menu — role decides the labels and entries. staff fix problems, so
+// they get neither Report Issue nor Lost & Found; the admin keeps Lost & Found
+// as oversight. each icon swaps to its blue twin while the tab is active.
 const menuFor = (role) => [
-  { label: "Dashboard", to: "", end: true, icon: null }, // home.png
+  { label: "Dashboard", to: "", end: true, icon: homegrey, iconActive: homeblue },
   ...(role === "student"
-    ? [{ label: "Report Issue", to: "/report", icon: null }] // reportissue.png
+    ? [{ label: "Report Issue", to: "/report", icon: moregrey, iconActive: moreblue }]
     : []),
-  { label: role === "student" ? "My Issues" : "All Issues", to: "/my-issues", icon: null }, // myissues.png
-  { label: "Lost & Found", to: "/lost-found", icon: null }, // lostfound.png
-  { label: "Notifications", to: "/notifications", icon: bell },
+  {
+    label:
+      role === "student" ? "My Issues" : role === "staff" ? "My Department" : "All Issues",
+    to: "/my-issues",
+    icon: menugrey,
+    iconActive: menublue,
+  },
+  ...(role !== "staff"
+    ? [
+        {
+          label: "Lost & Found",
+          to: "/lost-found",
+          icon: lostfoundgrey,
+          iconActive: lostfoundblue,
+        },
+      ]
+    : []),
+  { label: "Notifications", to: "/notifications", icon: bellgrey, iconActive: bell },
   ...(role === "admin"
-    ? [{ label: "Staff Management", to: "/admin", icon: null }] // staff.png
+    ? [{ label: "Staff Management", to: "/admin", icon: users }]
     : []),
-  { label: "Profile", to: "/profile", icon: null }, // profile.png
+  { label: "Profile", to: "/profile", icon: persongrey, iconActive: personblue },
 ];
 
 // neutral placeholder for menu icons still missing — swap in an <img> when added
@@ -107,7 +134,7 @@ export default function DashboardLayout() {
       {/* ---------- sidebar ---------- */}
       <aside className="dash-sidebar">
         <nav className="dash-menu">
-          {menuFor(role).map(({ label, to, end, icon }) => (
+          {menuFor(role).map(({ label, to, end, icon, iconActive }) => (
             <NavLink
               key={label}
               to={`/dashboard${to}`}
@@ -116,10 +143,21 @@ export default function DashboardLayout() {
                 isActive ? "dash-menuitem on" : "dash-menuitem"
               }
             >
-              {icon ? <img src={icon} alt="" /> : <DashIc />}
-              {label}
-              {label === "Notifications" && unread > 0 && (
-                <span className="dash-menubadge">{unread}</span>
+              {({ isActive }) => (
+                <>
+                  {icon ? (
+                    <img
+                      src={isActive && iconActive ? iconActive : icon}
+                      alt=""
+                    />
+                  ) : (
+                    <DashIc />
+                  )}
+                  {label}
+                  {label === "Notifications" && unread > 0 && (
+                    <span className="dash-menubadge">{unread}</span>
+                  )}
+                </>
               )}
             </NavLink>
           ))}

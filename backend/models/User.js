@@ -26,6 +26,13 @@ const userSchema = new mongoose.Schema(
     // what this person works on — set by the admin when creating a staff
     // account ("IT Technician", "Electrician", …) so everyone's job is known
     position: { type: String, trim: true },
+    // which issues land on this staff member's desk — matches the issue
+    // categories; "Other" catches problems no department matches
+    department: {
+      type: String,
+      enum: ["IT", "Maintenance", "Cleanliness", "Security", "Electrical", "Other"],
+      trim: true,
+    },
     // profile extras edited on the Profile tab. phone is private — it is only
     // ever returned to the account owner, never to other users
     dept: { type: String, trim: true },

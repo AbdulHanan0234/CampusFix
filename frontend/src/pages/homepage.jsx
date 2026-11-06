@@ -29,6 +29,14 @@ import peopleblue from "../assets/peopleblue.png";
 import targetblue from "../assets/targetblue.png";
 import heartblue from "../assets/heartblue.png";
 import departments from "../assets/departments.png";
+import homeblue from "../assets/homeblue.png";
+import moregrey from "../assets/moregrey.png";
+import menugrey from "../assets/menugrey.png";
+import menublue from "../assets/menublue.png";
+import persongrey from "../assets/persongrey.png";
+import bellgrey from "../assets/bellgrey.png";
+import priority from "../assets/priority.png";
+import location from "../assets/location.png";
 import "./Homepage.css";
 
 // Renders the asset if available, otherwise a tinted placeholder block.
@@ -150,13 +158,14 @@ const IMPACT = [
   },
 ];
 
-// sample data for the dashboard mockup in the hero
+// sample data for the dashboard mockup in the hero — same icons the real
+// sidebar uses, drawn tiny
 const DASH_NAV = [
-  "Dashboard",
-  "Report Issue",
-  "My Issues",
-  "Notifications",
-  "Profile",
+  { label: "Dashboard", icon: homeblue },
+  { label: "Report Issue", icon: moregrey },
+  { label: "My Issues", icon: menugrey },
+  { label: "Notifications", icon: bellgrey },
+  { label: "Profile", icon: persongrey },
 ];
 
 const ISSUES = [
@@ -313,10 +322,10 @@ export default function HomePage() {
                 <aside className="dash-side">
                   <img className="dash-logo" src={logo} alt="" />
                   <ul className="dash-nav">
-                    {DASH_NAV.map((item, i) => (
-                      <li key={item} className={i === 0 ? "on" : ""}>
-                        <Slot size={12} />
-                        {item}
+                    {DASH_NAV.map(({ label, icon }, i) => (
+                      <li key={label} className={i === 0 ? "on" : ""}>
+                        <Slot src={icon} size={12} />
+                        {label}
                       </li>
                     ))}
                   </ul>
@@ -383,21 +392,21 @@ export default function HomePage() {
                 </p>
                 <p className="ai-sub">We've organized your issue!</p>
                 <div className="ai-row">
-                  <span className="ai-ic tone-blue" />
+                  <Slot src={menublue} size={13} />
                   <span>
                     <small>Category</small>
                     <b>IT / Hardware</b>
                   </span>
                 </div>
                 <div className="ai-row">
-                  <span className="ai-ic tone-orange" />
+                  <Slot src={priority} size={13} />
                   <span>
                     <small>Priority</small>
                     <b>Medium</b>
                   </span>
                 </div>
                 <div className="ai-row">
-                  <span className="ai-ic tone-indigo" />
+                  <Slot src={location} size={13} />
                   <span>
                     <small>Location</small>
                     <b>Computer Lab 3</b>

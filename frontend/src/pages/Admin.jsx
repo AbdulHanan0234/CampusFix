@@ -18,6 +18,9 @@ const POSITION_IDEAS = [
   "Security Officer",
 ];
 
+// the department decides which issues land on this staff member's desk
+const DEPARTMENTS = ["IT", "Maintenance", "Cleanliness", "Security", "Electrical", "Other"];
+
 // MINIMAL staff-management page — create the finite set of staff accounts
 // (with what they work on) and hand them their credentials personally.
 export default function Admin() {
@@ -25,6 +28,7 @@ export default function Admin() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [position, setPosition] = useState("");
+  const [department, setDepartment] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null); // credentials shown once
@@ -47,13 +51,14 @@ export default function Admin() {
     try {
       const j = await api("/admin/staff", {
         method: "POST",
-        body: { name, email, position, password },
+        body: { name, email, position, department, password },
       });
       setCreated({ ...j.staff, password });
       setStaff((prev) => [j.staff, ...(prev || [])]);
       setName("");
       setEmail("");
       setPosition("");
+      setDepartment("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -110,8 +115,25 @@ export default function Admin() {
                     <option value={p} key={p} />
                   ))}
                 </datalist>
+              </label>
+              <label className="dash-field">
+                <span>Department (decides which issues they get)</span>
+                <select
+                  className="dash-select"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  required
+                >
+                  <option value="">Select department…</option>
+                  {DEPARTMENTS.map((d) => (
+                    <option value={d} key={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
                 <small className="detail-nophotos">
-                  Shown in the staff list so everyone&apos;s job is known at a glance.
+                  Issues of this category are routed to them — &quot;Other&quot; catches
+                  problems no department matches.
                 </small>
               </label>
               <small className="detail-nophotos">
@@ -149,6 +171,7 @@ export default function Admin() {
                     <b>
                       {s.name}
                       {s.position ? ` — ${s.position}` : ""}
+                      {s.department ? ` (${s.department})` : ""}
                       <em className="flat"> · joined {ago(s.createdAt)}</em>
                     </b>
                   </div>

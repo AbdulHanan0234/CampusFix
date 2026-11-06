@@ -7,13 +7,23 @@ import User from "../models/User.js";
 import notify from "../utils/notify.js";
 
 // ---- access rules (privacy core) ------------------------------------------
-// issue threads: the student who owns it + any staff/admin (management is a team)
+// issue threads: the student who owns it + ONLY the staff the issue was routed
+// to (its department) + admin. A Security officer can never read an
+// Electrical issue's chat.
 // item threads:  ONLY the two participants — plus admin, who can open any
 //                thread as evidence when two people are in conflict
 export const canAccess = (convo, user) => {
   if (user.role === "admin") return true;
   if (convo.participants.some((p) => String(p) === String(user._id))) return true;
-  return convo.refType === "issue" && user.role === "staff";
+  return false; // issue-thread staff access is decided by routing — see canAccessAsync
+};
+
+// same check, for rules that need the issue's routing (async because it reads)
+const canAccessAsync = async (convo, user) => {
+  if (canAccess(convo, user)) return true;
+  if (convo.refType !== "issue" || user.role !== "staff") return false;
+  const issue = await Issue.findById(convo.refId).select("routedTo").lean();
+  return !!issue && (issue.routedTo || []).some((id) => String(id) === String(user._id));
 };
 
 // who should be pinged when `sender` writes in this thread
@@ -22,9 +32,13 @@ const recipientsFor = async (convo, senderId, senderRole) => {
     // strictly the other participant — a third person is in a different thread
     return convo.participants.filter((p) => String(p) !== String(senderId));
   }
-  // issue thread: student writes → management; staff writes → the student
+  // issue thread: student writes → the routed department + admin; staff
+  // writes → the student
   if (senderRole === "student") {
-    return User.find({ role: { $in: ["staff", "admin"] } }).distinct("_id");
+    const issue = await Issue.findById(convo.refId).select("routedTo").lean();
+    const routed = issue?.routedTo || [];
+    const adminIds = await User.find({ role: "admin" }).distinct("_id");
+    return [...routed, ...adminIds];
   }
   return convo.participants.filter((p) => String(p) !== String(senderId));
 };
@@ -47,16 +61,25 @@ export const openConversation = async (req, res) => {
 
   let participants;
   if (refType === "issue") {
-    const issue = await Issue.findById(refId).select("owner").lean();
+    const issue = await Issue.findById(refId).select("owner routedTo").lean();
     if (!issue) return res.status(404).json({ message: "Issue not found." });
-    // students may only open the thread of their OWN issue
-    if (
-      req.user.role === "student" &&
-      String(issue.owner) !== String(req.user._id)
-    ) {
-      return res.status(403).json({ message: "This is not your issue." });
+    // students may only open the thread of their OWN issue; staff only an
+    // issue routed to their department; admin any (oversight)
+    if (req.user.role === "student") {
+      if (String(issue.owner) !== String(req.user._id)) {
+        return res.status(403).json({ message: "This is not your issue." });
+      }
+    } else if (req.user.role === "staff") {
+      const routed = (issue.routedTo || []).some(
+        (id) => String(id) === String(req.user._id)
+      );
+      if (!routed) {
+        return res
+          .status(403)
+          .json({ message: "This issue is not in your department's queue." });
+      }
     }
-    participants = [issue.owner]; // staff join by role, not by being listed
+    participants = [issue.owner]; // staff join by routing, not by being listed
   } else {
     const item = await Item.findById(refId).select("owner status").lean();
     if (!item) return res.status(404).json({ message: "Item not found." });
@@ -134,12 +157,25 @@ const addMessage = async (convo, user, text) => {
 };
 
 // GET /api/conversations — threads for the chat inbox.
-// students: only threads they're in · staff/admin: theirs + every issue thread
+// students: only threads they're in · staff: theirs + their department's issue
+// threads · admin: everything (oversight)
 export const listConversations = async (req, res) => {
-  const filter =
-    req.user.role === "student"
-      ? { participants: req.user._id }
-      : { $or: [{ participants: req.user._id }, { refType: "issue" }] };
+  let filter;
+  if (req.user.role === "student") {
+    filter = { participants: req.user._id };
+  } else if (req.user.role === "staff") {
+    const routed = await Issue.find({ routedTo: req.user._id })
+      .select("_id")
+      .lean();
+    filter = {
+      $or: [
+        { participants: req.user._id },
+        { refType: "issue", refId: { $in: routed.map((i) => i._id) } },
+      ],
+    };
+  } else {
+    filter = {}; // admin sees every thread
+  }
 
   const convos = await Conversation.find(filter)
     .sort({ "lastMessage.at": -1, createdAt: -1 })
@@ -198,7 +234,7 @@ export const listConversations = async (req, res) => {
 export const getConversation = async (req, res) => {
   const convo = await Conversation.findById(req.params.id).lean();
   if (!convo) return res.status(404).json({ message: "Conversation not found." });
-  if (!canAccess(convo, req.user)) {
+  if (!(await canAccessAsync(convo, req.user))) {
     return res.status(403).json({ message: "This chat is private." });
   }
   res.json({ conversation: convo });
@@ -209,7 +245,7 @@ export const getConversation = async (req, res) => {
 export const listMessages = async (req, res) => {
   const convo = await Conversation.findById(req.params.id).lean();
   if (!convo) return res.status(404).json({ message: "Conversation not found." });
-  if (!canAccess(convo, req.user)) {
+  if (!(await canAccessAsync(convo, req.user))) {
     return res.status(403).json({ message: "This chat is private." });
   }
 
@@ -220,7 +256,7 @@ export const listMessages = async (req, res) => {
   const messages = await Message.find(filter)
     .sort("createdAt")
     .limit(200)
-    .populate("sender", "name role")
+    .populate("sender", "name role position")
     .lean();
   res.json({ messages });
 };
@@ -229,7 +265,7 @@ export const listMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   const convo = await Conversation.findById(req.params.id);
   if (!convo) return res.status(404).json({ message: "Conversation not found." });
-  if (!canAccess(convo, req.user)) {
+  if (!(await canAccessAsync(convo, req.user))) {
     return res.status(403).json({ message: "This chat is private." });
   }
   const text = req.body.text?.trim();
@@ -243,7 +279,7 @@ export const sendMessage = async (req, res) => {
 export const markConversationRead = async (req, res) => {
   const convo = await Conversation.findById(req.params.id).lean();
   if (!convo) return res.status(404).json({ message: "Conversation not found." });
-  if (!canAccess(convo, req.user)) {
+  if (!(await canAccessAsync(convo, req.user))) {
     return res.status(403).json({ message: "This chat is private." });
   }
   await Message.updateMany(
