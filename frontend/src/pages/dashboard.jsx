@@ -21,16 +21,32 @@ import "./Dashboard.css";
 // they get neither Report Issue nor Lost & Found; the admin keeps Lost & Found
 // as oversight. each icon swaps to its blue twin while the tab is active.
 const menuFor = (role) => [
-  { label: "Dashboard", to: "", end: true, icon: homegrey, iconActive: homeblue },
+  {
+    label: "Dashboard",
+    to: "",
+    end: true,
+    icon: homegrey,
+    iconActive: homeblue,
+  },
   ...(role === "student"
-    ? [{ label: "Report Issue", to: "/report", icon: moregrey, iconActive: moreblue }]
+    ? [
+        {
+          label: "Report Issue",
+          to: "/report",
+          icon: moregrey,
+          iconActive: moreblue,
+        },
+      ]
     : []),
   {
     label:
-      role === "student" ? "My Issues" : role === "staff" ? "My Department" : "All Issues",
+      role === "student"
+        ? "My Issues"
+        : role === "staff"
+          ? "My Department"
+          : "All Issues",
     to: "/my-issues",
-    icon: menugrey,
-    iconActive: menublue,
+    icon: menu,
   },
   ...(role !== "staff"
     ? [
@@ -42,11 +58,21 @@ const menuFor = (role) => [
         },
       ]
     : []),
-  { label: "Notifications", to: "/notifications", icon: bellgrey, iconActive: bell },
+  {
+    label: "Notifications",
+    to: "/notifications",
+    icon: bellgrey,
+    iconActive: bell,
+  },
   ...(role === "admin"
     ? [{ label: "Staff Management", to: "/admin", icon: users }]
     : []),
-  { label: "Profile", to: "/profile", icon: persongrey, iconActive: personblue },
+  {
+    label: "Profile",
+    to: "/profile",
+    icon: persongrey,
+    iconActive: personblue,
+  },
 ];
 
 // neutral placeholder for menu icons still missing — swap in an <img> when added
@@ -93,7 +119,7 @@ export default function DashboardLayout() {
     // …and tell the server to expire the token so it can't be reused
     if (token) {
       api("/auth/logout", { method: "POST" }).catch(
-        () => {} // offline? the local logout already happened
+        () => {}, // offline? the local logout already happened
       );
     }
   };
