@@ -8,7 +8,6 @@ const generatePassword = () => {
   return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 };
 
-// common campus staff roles offered as suggestions — admin can type anything
 const POSITION_IDEAS = [
   "IT Technician",
   "Electrician",
