@@ -6,7 +6,7 @@ import tickblue from "../assets/tickblue.png";
 import hubblue from "../assets/hubblue.png";
 import rightarrow from "../assets/right-arrow.png";
 import ctabanner from "../assets/ctabanner.png";
-import { api, ago, storedUser } from "../api";
+import { api, ago, storedUser } from "../Api";
 import { computeIssueStats } from "../lib/IssueStats";
 import IssueList from "./IssueList";
 

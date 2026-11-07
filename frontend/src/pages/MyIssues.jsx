@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, storedUser } from "../api";
+import { api, storedUser } from "../Api";
 import IssueList from "./IssueList";
 
 const FILTERS = ["All", "Open", "In Progress", "Assigned", "Resolved"];
