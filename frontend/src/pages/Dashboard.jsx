@@ -46,7 +46,8 @@ const menuFor = (role) => [
           ? "My Department"
           : "All Issues",
     to: "/my-issues",
-    icon: menu,
+    icon: menugrey,
+    iconActive: menublue,
   },
   ...(role !== "staff"
     ? [
