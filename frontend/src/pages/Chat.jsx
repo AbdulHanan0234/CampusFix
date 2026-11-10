@@ -123,19 +123,16 @@ export default function Chat({ refType, refId, onConversationOpen }) {
           messages.map((m) => {
             const own = String(m.sender?._id ?? m.sender) === String(me?.id);
             return (
-              <div className={`dash-comment${own ? " me" : ""}`} key={m._id}>
-                <span className={`dash-avatar small t-${own ? "indigo" : "violet"}`}>
-                  {(m.sender?.name || "?").charAt(0)}
-                </span>
-                <div className="dash-commentbody">
-                  <b>
-                    {own ? "You" : m.sender?.name}
-                    {!own && m.sender?.position && (
-                      <em className="chat-pos"> · {m.sender.position}</em>
-                    )}
-                  </b>
+              <div className={`chat-msg ${own ? "mine" : "theirs"}`} key={m._id}>
+                <div className="chat-bubble">
+                  {!own && (
+                    <small className="chat-who">
+                      {m.sender?.name || "?"}
+                      {m.sender?.position ? ` · ${m.sender.position}` : ""}
+                    </small>
+                  )}
                   <p>{m.text}</p>
-                  <small>{ago(m.createdAt)}</small>
+                  <small className="chat-time">{ago(m.createdAt)}</small>
                 </div>
               </div>
             );
@@ -149,8 +146,15 @@ export default function Chat({ refType, refId, onConversationOpen }) {
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Write a message…"
         />
-        <button className="dash-btn small" type="submit" disabled={!draft.trim()}>
-          Send
+        <button
+          className="dash-btn small chat-send"
+          type="submit"
+          disabled={!draft.trim()}
+          aria-label="Send message"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
         </button>
       </form>
       {error && <p className="detail-nophotos">{error}</p>}

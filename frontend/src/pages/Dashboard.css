@@ -956,7 +956,7 @@
   margin: 2px 0 14px;
 }
 
-.dash-page form > .dash-btn {
+.dash-page form > .dash-btn:not(.small) {
   width: 100%;
 }
 
@@ -1434,6 +1434,7 @@
 
 .dash-commentform {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 12px;
 }
@@ -1441,6 +1442,30 @@
 .dash-commentform input {
   flex: 1;
   min-width: 0;
+  /* fixed bar height, centered by the browser — no padding math to drift */
+  height: 44px;
+  padding: 0 14px;
+}
+
+/* Send is pinned to exactly the input's height — the small button variant's
+   own padding can't make it shorter or offset it */
+.dash-commentform .dash-btn {
+  flex: none;
+  height: 44px;
+  margin: 0;
+  border-radius: 12px;
+}
+
+/* icon-only Send — a 44px square with the paper-plane glyph */
+.dash-commentform .chat-send {
+  width: 44px;
+  padding: 0;
+}
+
+.chat-send svg {
+  width: 17px;
+  height: 17px;
+  fill: #fff;
 }
 
 /* ---------- lost & found ---------- */
@@ -1956,6 +1981,59 @@
   max-height: 340px;
   overflow-y: auto;
   padding-right: 2px;
+}
+
+/* WhatsApp-style chat — bubbles, own messages right in indigo, name shown
+   small only on the other person's side (no big sender names) */
+.chat-msg {
+  display: flex;
+  padding: 3px 0;
+}
+
+.chat-msg.mine {
+  justify-content: flex-end;
+}
+
+.chat-msg.theirs {
+  justify-content: flex-start;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: #f1f3fb;
+}
+
+.chat-msg.mine .chat-bubble {
+  background: #e7e5fd;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg.theirs .chat-bubble {
+  border-bottom-left-radius: 4px;
+}
+
+.chat-who {
+  display: block;
+  margin-bottom: 2px;
+  color: #352ff6;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chat-bubble p {
+  margin: 0;
+  color: #1f2451;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.chat-time {
+  display: block;
+  margin-top: 2px;
+  color: #9aa3c7;
+  font-size: 10.5px;
 }
 
 .chat-hint {
