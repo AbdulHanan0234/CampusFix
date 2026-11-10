@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api, storedUser } from "../Api";
-import { computeIssueStats } from "../lib/IssueStats";
 
 // editable profile fields (email/role are identity — the server refuses those).
 // staff don't carry student IDs; their position/department come from the admin
@@ -19,7 +18,6 @@ const PREFS = [
 
 export default function Profile() {
   const [user, setUser] = useState(null); // null = still loading
-  const [stats, setStats] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -29,9 +27,6 @@ export default function Profile() {
     api("/auth/me")
       .then((j) => alive && setUser(j.user))
       .catch(() => alive && setUser(storedUser()));
-    api("/issues")
-      .then((j) => alive && setStats(computeIssueStats(j.issues)))
-      .catch(() => alive && setStats({ total: 0, resolved: 0, pending: 0 }));
     return () => {
       alive = false;
     };
@@ -85,9 +80,7 @@ export default function Profile() {
               <h2>{user.name}</h2>
               <small>
                 {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Student"}
-                {user.position ? ` · ${user.position}` : ""}
-                {user.department ? ` · ${user.department}` : ""}
-                {!user.position && user.dept ? ` · ${user.dept}` : ""}
+                {user.dept ? ` · ${user.dept}` : ""}
               </small>
             </div>
             <button
@@ -122,16 +115,8 @@ export default function Profile() {
               </form>
             ) : (
               <div className="profile-fields">
-                {[
-                  ...EDITABLE(user.role),
-                  ...(user.role !== "student"
-                    ? [
-                        { key: "position", label: "Position" },
-                        { key: "department", label: "Department (work)" },
-                      ]
-                    : []),
-                  { key: "email", label: "Email" },
-                ].map(({ key, label }) => (
+                {[...EDITABLE(user.role), { key: "email", label: "Email" }].map(
+                  ({ key, label }) => (
                   <div className="profile-field" key={key}>
                     <small>{label}</small>
                     <b>{user[key] || "—"}</b>
@@ -143,26 +128,6 @@ export default function Profile() {
         </div>
 
         <aside className="dash-rail">
-          <section className="dash-card">
-            <div className="dash-cardhead">
-              <h2>Your Activity</h2>
-            </div>
-            <div className="profile-activity">
-              <div>
-                <b>{stats ? stats.total : "—"}</b>
-                <small>Reported</small>
-              </div>
-              <div>
-                <b>{stats ? stats.resolved : "—"}</b>
-                <small>Resolved</small>
-              </div>
-              <div>
-                <b>{stats ? stats.pending : "—"}</b>
-                <small>Pending</small>
-              </div>
-            </div>
-          </section>
-
           <section className="dash-card">
             <div className="dash-cardhead">
               <h2>Notification Preferences</h2>

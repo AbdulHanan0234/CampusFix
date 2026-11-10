@@ -18,7 +18,14 @@ const POSITION_IDEAS = [
 ];
 
 // the department decides which issues land on this staff member's desk
-const DEPARTMENTS = ["IT", "Maintenance", "Cleanliness", "Security", "Electrical", "Other"];
+const DEPARTMENTS = [
+  "IT",
+  "Maintenance",
+  "Cleanliness",
+  "Security",
+  "Electrical",
+  "Other",
+];
 
 // MINIMAL staff-management page — create the finite set of staff accounts
 // (with what they work on) and hand them their credentials personally.
@@ -31,6 +38,8 @@ export default function Admin() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null); // credentials shown once
+  const [reset, setReset] = useState(null); // new password shown once
+  const [busyId, setBusyId] = useState(null); // row mid-action
 
   useEffect(() => {
     let alive = true;
@@ -65,11 +74,55 @@ export default function Admin() {
     }
   };
 
+  // the old password can't be shown (bcrypt is one-way) — a reset generates a
+  // fresh one and shows it once, exactly like account creation does
+  const resetPassword = async (s) => {
+    if (
+      !window.confirm(
+        `Reset ${s.name}'s password? They will need the new one to log in.`,
+      )
+    )
+      return;
+    setBusyId(s._id);
+    setError("");
+    try {
+      const j = await api(`/admin/staff/${s._id}/password`, { method: "POST" });
+      setReset({ name: s.name, email: s.email, password: j.password });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removeStaff = async (s) => {
+    if (
+      !window.confirm(
+        `Delete ${s.name}'s account? All their data — chats, notifications, items — is removed permanently. This cannot be undone.`,
+      )
+    )
+      return;
+    setBusyId(s._id);
+    setError("");
+    try {
+      await api(`/admin/staff/${s._id}`, { method: "DELETE" });
+      setStaff((prev) => prev.filter((x) => x._id !== s._id));
+      setReset(null); // credentials for a deleted account mean nothing now
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="dash-page">
       <div className="dash-pagehead">
         <h1>Staff Management</h1>
-        <p>Create staff accounts, note what each one works on, and share their login credentials.</p>
+        <p>
+          Create staff accounts, note what each one works on, and share their
+          login credentials.
+        </p>
       </div>
 
       <div className="dash-twoCol">
@@ -131,12 +184,12 @@ export default function Admin() {
                   ))}
                 </select>
                 <small className="detail-nophotos">
-                  Issues of this category are routed to them — &quot;Other&quot; catches
-                  problems no department matches.
+                  Issues of this category are routed to them — &quot;Other&quot;
+                  catches problems no department matches.
                 </small>
               </label>
-              <small className="detail-nophotos">
-                A password is generated for you — shown once after creating.
+              <small className="detail-nophotos" style={{ color: "#e11d48" }}>
+                A password is generated for you and shown once after creating.
               </small>
               {error && <p className="detail-nophotos">{error}</p>}
               <button className="dash-btn" type="submit" disabled={creating}>
@@ -148,7 +201,8 @@ export default function Admin() {
               <div className="dash-empty" style={{ marginTop: 14 }}>
                 <p>Credentials for {created.name}</p>
                 <span>
-                  Email: <b>{created.email}</b> · Password: <b>{created.password}</b>
+                  Email: <b>{created.email}</b> · Password:{" "}
+                  <b>{created.password}</b>
                   <br />
                   Hand these over personally — they are not shown again.
                 </span>
@@ -173,6 +227,25 @@ export default function Admin() {
                       {s.department ? ` (${s.department})` : ""}
                       <em className="flat"> · joined {ago(s.createdAt)}</em>
                     </b>
+                    <div className="dash-chips" style={{ marginTop: 8 }}>
+                      <button
+                        className="dash-chip"
+                        type="button"
+                        disabled={busyId === (s._id || s.id)}
+                        onClick={() => resetPassword(s)}
+                      >
+                        Reset password
+                      </button>
+                      <button
+                        className="dash-chip"
+                        type="button"
+                        disabled={busyId === (s._id || s.id)}
+                        onClick={() => removeStaff(s)}
+                        style={{ color: "#c0392b" }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -180,6 +253,18 @@ export default function Admin() {
               <div className="dash-empty">
                 <p>No staff yet.</p>
                 <span>Create the first staff account above.</span>
+              </div>
+            )}
+
+            {reset && (
+              <div className="dash-empty" style={{ marginTop: 14 }}>
+                <p>New password for {reset.name}</p>
+                <span>
+                  Email: <b>{reset.email}</b> · Password:{" "}
+                  <b>{reset.password}</b>
+                  <br />
+                  Hand it over personally — it is not shown again.
+                </span>
               </div>
             )}
           </section>

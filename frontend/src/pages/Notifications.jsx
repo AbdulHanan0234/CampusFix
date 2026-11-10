@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, ago } from "../Api";
+import { api, ago, notifsChanged } from "../Api";
 
 const TABS = ["All", "Unread"];
 
@@ -29,6 +29,7 @@ export default function Notifications() {
         prev.map((x) => (x._id === n._id ? { ...x, read: true } : x))
       );
       api(`/notifications/${n._id}/read`, { method: "POST" }).catch(() => {});
+      notifsChanged(); // bell + sidebar badges refresh now, not on next poll
     }
     if (n.link) navigate(n.link);
   };
@@ -36,6 +37,7 @@ export default function Notifications() {
   const markAll = () => {
     setItems((prev) => prev.map((x) => ({ ...x, read: true })));
     api("/notifications/read-all", { method: "POST" }).catch(() => {});
+    notifsChanged();
   };
 
   return (

@@ -40,11 +40,12 @@ import location from "../assets/location.png";
 import "./Homepage.css";
 
 // Renders the asset if available, otherwise a tinted placeholder block.
-const Slot = ({ src, size = 24 }) =>
+const Slot = ({ src, size = 24, className }) =>
   src ? (
     <img
       src={src}
       alt=""
+      className={className}
       style={{ width: size, height: size, objectFit: "contain" }}
     />
   ) : (
@@ -388,25 +389,25 @@ export default function HomePage() {
 
               <div className="ai-card">
                 <p className="ai-head">
-                  <Slot src={artificialIntelligence} size={13} /> AI Assistant
+                  <Slot src={artificialIntelligence} size={13} className="ai-tile ai-tile-blue" /> AI Assistant
                 </p>
                 <p className="ai-sub">We've organized your issue!</p>
                 <div className="ai-row">
-                  <Slot src={menublue} size={13} />
+                  <Slot src={menublue} size={13} className="ai-tile ai-tile-blue" />
                   <span>
                     <small>Category</small>
                     <b>IT / Hardware</b>
                   </span>
                 </div>
                 <div className="ai-row">
-                  <Slot src={priority} size={13} />
+                  <Slot src={priority} size={13} className="ai-tile ai-tile-amber" />
                   <span>
                     <small>Priority</small>
                     <b>Medium</b>
                   </span>
                 </div>
                 <div className="ai-row">
-                  <Slot src={location} size={13} />
+                  <Slot src={location} size={13} className="ai-tile ai-tile-blue" />
                   <span>
                     <small>Location</small>
                     <b>Computer Lab 3</b>

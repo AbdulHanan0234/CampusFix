@@ -590,6 +590,20 @@ h4 {
   font-size: 11px;
 }
 
+/* tiles behind the AI-card icons — tinted to match each icon's own color
+   (Slot passes className through to its img) */
+.ai-tile {
+  box-sizing: content-box;
+  padding: 5px;
+  border-radius: 8px;
+}
+.ai-tile-blue {
+  background: rgba(42, 37, 208, 0.08);
+}
+.ai-tile-amber {
+  background: rgba(240, 165, 2, 0.15);
+}
+
 /* ---------- sections ---------- */
 .section {
   padding: 90px 0;
@@ -672,6 +686,9 @@ h4 {
   width: 22px;
   height: 22px;
   margin-top: 16px;
+  /* nudge left: ragged text edges make the centered arrow look next-card-
+     biased, this splits the visible gap evenly */
+  transform: translateX(-12px);
   opacity: 0.45;
 }
 

@@ -15,6 +15,7 @@ import menublue from "../assets/menublue.png";
 import persongrey from "../assets/persongrey.png";
 import personblue from "../assets/personblue.png";
 import users from "../assets/users.png";
+import usersgrey from "../assets/usersgrey.png";
 import "./Dashboard.css";
 
 // sidebar menu — role decides the labels and entries. staff fix problems, so
@@ -66,7 +67,14 @@ const menuFor = (role) => [
     iconActive: bell,
   },
   ...(role === "admin"
-    ? [{ label: "Staff Management", to: "/admin", icon: users }]
+    ? [
+        {
+          label: "Staff Management",
+          to: "/admin",
+          icon: usersgrey,
+          iconActive: users,
+        },
+      ]
     : []),
   {
     label: "Profile",
@@ -105,9 +113,13 @@ export default function DashboardLayout() {
         .catch(() => {}); // polling errors stay silent
     load();
     const timer = setInterval(load, 30_000);
+    // any page marking notifications read broadcasts "notif-read" (Api.js
+    // notifsChanged) — the badges catch up instantly rather than on next poll
+    window.addEventListener("notif-read", load);
     return () => {
       alive = false;
       clearInterval(timer);
+      window.removeEventListener("notif-read", load);
     };
   }, []);
 

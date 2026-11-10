@@ -38,6 +38,13 @@ export async function api(path, { method = "GET", body } = {}) {
   return json;
 }
 
+// fire this whenever anything marks notifications read — the dashboard layout
+// listens for "notif-read" and refreshes its bell + sidebar badges on the spot
+// instead of waiting for the next 30s poll
+export function notifsChanged() {
+  window.dispatchEvent(new Event("notif-read"));
+}
+
 // reads a File into a data URL and stores it as BinData via the backend.
 // returns the new Image id to attach to an issue/item.
 export async function uploadImage(file) {
@@ -63,6 +70,14 @@ export function ago(dateish) {
   const days = Math.round(hours / 24);
   if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
   return new Date(dateish).toLocaleDateString();
+}
+
+// greeting name — the full name while it fits (≤24 chars); longer names
+// collapse to just the first name so the hero heading never wraps awkwardly
+export function displayName(name, fallback) {
+  const full = (name || "").trim();
+  if (!full) return fallback;
+  return full.length <= 24 ? full : full.split(" ")[0];
 }
 
 // the logged-in user stored at login/signup — null when the shape is unreadable

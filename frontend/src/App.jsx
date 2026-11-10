@@ -40,6 +40,12 @@ function StudentOnly({ children }) {
   return role === 'student' ? children : <Navigate to="/dashboard" replace />
 }
 
+// admins browse Lost & Found as a read-only library; posting stays student-only
+function StudentOrAdmin({ children }) {
+  const role = storedUser()?.role || 'student'
+  return role === 'student' || role === 'admin' ? children : <Navigate to="/dashboard" replace />
+}
+
 const App = () => {
   return (
     <Routes>
@@ -52,9 +58,9 @@ const App = () => {
         <Route path="report" element={<StudentOnly><ReportIssue /></StudentOnly>} />
         <Route path="my-issues" element={<MyIssues />} />
         <Route path="my-issues/:id" element={<IssueDetailPage />} />
-        <Route path="lost-found" element={<StudentOnly><LostFound /></StudentOnly>} />
+        <Route path="lost-found" element={<StudentOrAdmin><LostFound /></StudentOrAdmin>} />
         <Route path="lost-found/new" element={<StudentOnly><PostItem /></StudentOnly>} />
-        <Route path="lost-found/:id" element={<StudentOnly><ItemDetailPage /></StudentOnly>} />
+        <Route path="lost-found/:id" element={<StudentOrAdmin><ItemDetailPage /></StudentOrAdmin>} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="admin" element={<Admin />} />
         <Route path="profile" element={<Profile />} />

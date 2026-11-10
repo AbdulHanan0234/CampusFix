@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import rightarrow from "../assets/right-arrow.png";
 import lostfoundservice from "../assets/lostfoundservice.png";
-import { api } from "../Api";
+import { api, storedUser } from "../Api";
 import AuthImg from "../components/AuthImg";
 
 const KINDS = ["All", "Lost", "Found", "Matched"];
@@ -21,6 +21,8 @@ export default function LostFound() {
   const [kind, setKind] = useState("All");
   const [cat, setCat] = useState("");
   const [query, setQuery] = useState("");
+  // admin oversight: browse the library read-only — posting is student-only
+  const isAdmin = storedUser()?.role === "admin";
 
   useEffect(() => {
     let alive = true;
@@ -64,16 +66,18 @@ export default function LostFound() {
               Lost something? Found something? Help your fellow students and
               get items back where they belong.
             </p>
-            <div className="lf-actions">
-              <Link className="dash-cta lost" to="/dashboard/lost-found/new?kind=lost">
-                <i className="lf-dot lost" /> I Lost Something{" "}
-                <img src={rightarrow} alt="" />
-              </Link>
-              <Link className="dash-cta found" to="/dashboard/lost-found/new?kind=found">
-                <i className="lf-dot found" /> I Found Something{" "}
-                <img src={rightarrow} alt="" />
-              </Link>
-            </div>
+            {!isAdmin && (
+              <div className="lf-actions">
+                <Link className="dash-cta lost" to="/dashboard/lost-found/new?kind=lost">
+                  <i className="lf-dot lost" /> I Lost Something{" "}
+                  <img src={rightarrow} alt="" />
+                </Link>
+                <Link className="dash-cta found" to="/dashboard/lost-found/new?kind=found">
+                  <i className="lf-dot found" /> I Found Something{" "}
+                  <img src={rightarrow} alt="" />
+                </Link>
+              </div>
+            )}
           </div>
           <img className="lf-art" src={lostfoundservice} alt="" />
         </section>
@@ -156,7 +160,11 @@ export default function LostFound() {
               {items.length === 0 && (
                 <div className="dash-empty wide">
                   <p>Nothing posted yet.</p>
-                  <span>Be the first — use the buttons above to post an item.</span>
+                  <span>
+                    {isAdmin
+                      ? "Items will appear here as students post them."
+                      : "Be the first — use the buttons above to post an item."}
+                  </span>
                 </div>
               )}
               {items.length > 0 && shown.length === 0 && (

@@ -6,7 +6,7 @@ import tickblue from "../assets/tickblue.png";
 import hubblue from "../assets/hubblue.png";
 import rightarrow from "../assets/right-arrow.png";
 import ctabanner from "../assets/ctabanner.png";
-import { api, ago, storedUser } from "../Api";
+import { api, ago, storedUser, notifsChanged, displayName } from "../Api";
 import { computeIssueStats } from "../lib/IssueStats";
 import IssueList from "./IssueList";
 
@@ -55,7 +55,7 @@ export default function StaffDashboard() {
   }, []);
 
   const user = storedUser();
-  const firstName = (user?.name || "Staff").split(" ")[0];
+  const name = displayName(user?.name, "Staff");
   const isStaff = user?.role === "staff";
   const stats = computeIssueStats(issues || []);
 
@@ -65,7 +65,7 @@ export default function StaffDashboard() {
         <section className="dash-hero">
           <div className="dash-herocopy">
             <h1>
-              {greeting()}, {firstName} <span>🛠</span>
+              {greeting()}, {name}
             </h1>
             <p>
               {isStaff && user?.department
@@ -133,7 +133,19 @@ export default function StaffDashboard() {
           ) : notifs.length ? (
             <div className="dash-notiflist">
               {notifs.slice(0, 4).map((n) => (
-                <Link className="dash-notifrow" to={n.link || "/dashboard/notifications"} key={n._id}>
+                <Link
+                  className="dash-notifrow"
+                  to={n.link || "/dashboard/notifications"}
+                  key={n._id}
+                  onClick={() => {
+                    // opening from the rail counts as reading it — keep the
+                    // page list, bell and sidebar badges in sync
+                    if (!n.read) {
+                      api(`/notifications/${n._id}/read`, { method: "POST" }).catch(() => {});
+                      notifsChanged();
+                    }
+                  }}
+                >
                   <span className={`dash-notific t-${n.tone}`}>{n.glyph}</span>
                   <span className="dash-notifinfo">
                     <b>{n.title}</b>
