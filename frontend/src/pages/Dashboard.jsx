@@ -95,6 +95,31 @@ export default function DashboardLayout() {
   const user = storedUser() || { name: "Student" };
   const role = user.role || "student";
   const [unread, setUnread] = useState(0);
+  const [q, setQ] = useState("");
+  const [searchables, setSearchables] = useState(null); // fetched on first use
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // one fetch per mount, lazily on first interaction — the live results
+  // filter this locally, no per-keystroke requests
+  useEffect(() => {
+    if (!searchOpen || searchables) return;
+    let alive = true;
+    api("/issues")
+      .then((j) => alive && setSearchables(j.issues))
+      .catch(() => alive && setSearchables([]));
+    return () => {
+      alive = false;
+    };
+  }, [searchOpen, searchables]);
+
+  const term = q.trim().toLowerCase();
+  const searchHits = searchables
+    ? searchables
+        .filter((i) =>
+          `${i.title} ${i.location} ${i.desc}`.toLowerCase().includes(term)
+        )
+        .slice(0, 6)
+    : [];
 
   // not logged in? the dashboard is pointless — go log in first
   useEffect(() => {
@@ -145,10 +170,55 @@ export default function DashboardLayout() {
           <img src={logo} alt="CampusFix" />
         </Link>
 
-        <label className="dash-search">
-          <SearchIc />
-          <input type="text" placeholder="Search issues, locations..." />
-        </label>
+        <div className="dash-searchwrap">
+          <form
+            className="dash-search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              // Enter still opens the full filtered list on the issues tab
+              navigate(`/dashboard/my-issues?q=${encodeURIComponent(q.trim())}`);
+            }}
+          >
+            <SearchIc />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => setSearchOpen(false)}
+              placeholder="Search issues, locations…"
+            />
+          </form>
+          {searchOpen && term && (
+            <div className="dash-searchdrop" onMouseDown={(e) => e.preventDefault()}>
+              {searchables === null ? (
+                <p className="detail-nophotos">Searching…</p>
+              ) : searchHits.length ? (
+                searchHits.map((i) => (
+                  <Link
+                    className="dash-searchrow"
+                    to={`/dashboard/my-issues/${i._id}`}
+                    key={i._id}
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setQ("");
+                    }}
+                  >
+                    <b>{i.title}</b>
+                    <small>
+                      📍 {i.location || "—"} · {i.status}
+                    </small>
+                  </Link>
+                ))
+              ) : (
+                <p className="detail-nophotos">No matches.</p>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="dash-topactions">
           <button

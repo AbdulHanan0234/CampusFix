@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ago, storedUser } from "../Api";
+import { api, ago, storedUser, notifsChanged } from "../Api";
 import AuthImg from "../components/AuthImg";
 import Chat from "./Chat";
 
@@ -26,6 +26,15 @@ export default function IssueDetail() {
     return () => {
       alive = false;
     };
+  }, [id]);
+
+  // viewing the issue clears every notification about it — status changes,
+  // chat replies, all of them (they deep-link here). Notifications arriving
+  // after this moment stay unread until the issue is opened again.
+  useEffect(() => {
+    api(`/notifications/read-issue/${id}`, { method: "POST" })
+      .then(() => notifsChanged())
+      .catch(() => {});
   }, [id]);
 
   // staff/admin move the issue through its lifecycle from this page

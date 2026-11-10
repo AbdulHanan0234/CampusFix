@@ -34,3 +34,19 @@ export const markAllRead = async (req, res) => {
   );
   res.json({ ok: true });
 };
+
+// POST /api/notifications/read-issue/:issueId — opening an issue marks every
+// notification about it as seen (status changes, chat replies — they all deep-
+// link to the issue). Anything arriving AFTER this call stays unread until the
+// issue is opened again.
+export const markIssueRead = async (req, res) => {
+  const j = await Notification.updateMany(
+    {
+      user: req.user._id,
+      read: false,
+      link: `/dashboard/my-issues/${req.params.issueId}`,
+    },
+    { read: true }
+  );
+  res.json({ ok: true, updated: j.modifiedCount });
+};

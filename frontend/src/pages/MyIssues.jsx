@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, storedUser } from "../Api";
 import IssueList from "./IssueList";
 
@@ -9,7 +10,9 @@ export default function MyIssues() {
   const [issues, setIssues] = useState(null); // null = still loading
   const [filter, setFilter] = useState("All");
   const [dept, setDept] = useState("");
-  const [query, setQuery] = useState("");
+  // the topbar search lands here with ?q= — start filtered to that term
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const role = storedUser()?.role || "student";
   const staffView = role !== "student";
 
