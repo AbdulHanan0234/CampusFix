@@ -129,12 +129,19 @@ export default function ItemDetail() {
             {contact === null ? (
               <p className="detail-nophotos">Checking…</p>
             ) : contact ? (
-              <div className="profile-fields">
-                <div className="profile-field">
-                  <small>{contact.contactName || "Poster"}</small>
-                  <b>{contact.contactPhone}</b>
+              contact.contactPhone ? (
+                <div className="profile-fields">
+                  <div className="profile-field">
+                    <small>{contact.contactName || "Poster"}</small>
+                    <b>{contact.contactPhone}</b>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="dash-empty">
+                  <p>No number shared.</p>
+                  <span>The poster prefers to connect through chat only.</span>
+                </div>
+              )
             ) : (
               <div className="dash-empty">
                 <p>Contact is private.</p>

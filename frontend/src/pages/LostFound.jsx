@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import rightarrow from "../assets/right-arrow.png";
 import lostfoundservice from "../assets/lostfoundservice.png";
 import { api, storedUser } from "../Api";
@@ -18,7 +18,11 @@ const LOST_STEPS = [
 
 export default function LostFound() {
   const [items, setItems] = useState(null); // null = still loading
-  const [kind, setKind] = useState("All");
+  // ?kind=lost|found deep link (from the posting form's "View All") prefilters
+  const [params] = useSearchParams();
+  const [kind, setKind] = useState(
+    params.get("kind") === "lost" ? "Lost" : params.get("kind") === "found" ? "Found" : "All"
+  );
   const [cat, setCat] = useState("");
   const [query, setQuery] = useState("");
   // admin oversight: browse the library read-only — posting is student-only

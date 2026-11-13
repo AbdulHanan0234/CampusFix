@@ -20,9 +20,7 @@ export const createItem = async (req, res) => {
   if (!desc?.trim()) {
     return res.status(400).json({ message: "Please describe the item." });
   }
-  if (!contactPhone?.trim()) {
-    return res.status(400).json({ message: "Please add a contact number." });
-  }
+  // contactPhone is optional now — the gated chat is the primary channel
 
   // one optional photo — must be an Image the requester uploaded themselves
   let imageId = null;

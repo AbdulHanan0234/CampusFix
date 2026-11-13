@@ -1560,6 +1560,8 @@
   gap: 14px;
   padding: 18px;
   margin: 0;
+  /* the whole card is a <Link> — kill the browser's default link underline */
+  text-decoration: none;
 }
 
 .lf-iteminfo {

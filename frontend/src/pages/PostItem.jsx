@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import rightarrow from "../assets/right-arrow.png";
-import { api, uploadImage } from "../Api";
+import { api, ago, uploadImage } from "../Api";
 
 const CATEGORIES = ["Personal", "Academic", "Electronics", "Other"];
 
@@ -23,6 +23,24 @@ export default function PostItem() {
   const [file, setFile] = useState(null); // { file, url }
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // a lost-reporter should scan FOUND posts (maybe someone has it), and a
+  // finder should scan LOST posts (looking for its owner) — show the opposite
+  // kind beside the form so a match is spotted before/while posting
+  const opposite = kind === "Lost" ? "Found" : "Lost";
+  const [matches, setMatches] = useState(null); // null = still loading
+
+  useEffect(() => {
+    let alive = true;
+    api("/items")
+      .then((j) =>
+        alive && setMatches(j.items.filter((i) => i.kind === opposite))
+      )
+      .catch(() => alive && setMatches([]));
+    return () => {
+      alive = false;
+    };
+  }, [opposite]);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -150,16 +168,16 @@ export default function PostItem() {
             </div>
 
             <label className="dash-field">
-              <span>Contact number</span>
+              <span>Contact number (optional)</span>
               <input
                 type="tel"
                 value={form.contactPhone}
                 onChange={set("contactPhone")}
-                placeholder="e.g. +92 300 1234567"
-                required
+                placeholder="e.g. +92 300 1234567 — or leave empty and use chat"
               />
               <small className="detail-nophotos">
-                Private — only revealed to people you chat with about this item.
+                Optional — and private either way: only revealed to people you
+                chat with about this item. Chat alone is enough to connect.
               </small>
             </label>
 
@@ -181,6 +199,48 @@ export default function PostItem() {
             </button>
           </section>
         </form>
+
+        <aside className="dash-rail">
+          <section className="dash-card">
+            <div className="dash-cardhead">
+              <h2>
+                {opposite === "Found"
+                  ? "Found items — someone may have yours"
+                  : "Lost items — maybe its owner is here"}
+              </h2>
+              <Link
+                className="dash-viewall"
+                to={`/dashboard/lost-found?kind=${opposite.toLowerCase()}`}
+              >
+                View All <img src={rightarrow} alt="" />
+              </Link>
+            </div>
+            {matches === null ? (
+              <p className="detail-nophotos">Loading…</p>
+            ) : matches.length ? (
+              <div className="dash-notiflist">
+                {matches.slice(0, 6).map((i) => (
+                  <Link className="dash-notifrow" to={`/dashboard/lost-found/${i._id}`} key={i._id}>
+                    <span className={`dash-notific ${i.kind === "Lost" ? "t-amber" : "t-green"}`}>
+                      {i.kind === "Lost" ? "!" : "✓"}
+                    </span>
+                    <span className="dash-notifinfo">
+                      <b>{i.title || i.desc.slice(0, 42)}</b>
+                      <small>
+                        📍 {i.location || "—"} · {ago(i.createdAt)}
+                      </small>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="dash-empty">
+                <p>No {opposite.toLowerCase()} items yet.</p>
+                <span>Post yours anyway — the next person will see it here.</span>
+              </div>
+            )}
+          </section>
+        </aside>
       </div>
     </div>
   );

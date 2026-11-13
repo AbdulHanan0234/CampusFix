@@ -23,7 +23,9 @@ const itemSchema = new mongoose.Schema(
     location: { type: String, trim: true },
     status: { type: String, enum: ITEM_STATUSES, default: "Open" },
     image: { type: mongoose.Schema.Types.ObjectId, ref: "Image", default: null },
-    contactPhone: { type: String, required: true, trim: true },
+    // optional — the private chat is the primary way to connect; posters who
+    // don't want to share a number at all simply leave it empty
+    contactPhone: { type: String, trim: true },
     contactName: { type: String, trim: true },
   },
   { timestamps: true }
