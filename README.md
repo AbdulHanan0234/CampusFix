@@ -2,7 +2,7 @@
 
 **CampusFix** is a campus maintenance platform where students report problems — broken projectors, leaks, cleanliness issues — and the right department staff picks them up, updates them, and resolves them. It also includes a private, chat-based **Lost & Found** so misplaced belongings find their way home.
 
-Live: **https://campusfix-ah24.vercel.app** · Backend: **https://campusfix-xo7e.onrender.com**
+Live: **https://campusfix-ah.vercel.app** · Backend: **https://campusfix-xo7e.onrender.com**
 
 ---
 
